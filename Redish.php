@@ -14,7 +14,7 @@ class Redish {
 	 * PDO object
 	 * @var PDO
 	 */
-	private $conn;
+	public $conn;
 	
 	/**
 	 * Cache our PDOStatements
@@ -23,42 +23,62 @@ class Redish {
 	private $cache = array();
 	
 	/**
+	 * SQL to setup tables
+	 * @var multitype:string
+	 */
+	private static $create_sql = array(
+		'create' => 'CREATE TABLE IF NOT EXISTS redish (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB, type NUMERIC, expiry NUMERIC)',
+		'index' => 'CREATE INDEX IF NOT EXISTS store_key ON redish (key)',
+	);
+	
+	/**
 	 * Keep all the SQL in one place
 	 * @var multitype:string
 	 */
 	private static $sql = array(
-		'create_list' => 'CREATE TABLE IF NOT EXISTS list (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB)',
-		'create_store' => 'CREATE TABLE IF NOT EXISTS store (key TEXT UNIQUE, item BLOB)',
-		'write_lock' => 'BEGIN IMMEDIATE',
+		'get_lock' => 'BEGIN IMMEDIATE',
+		'release_lock' => 'COMMIT',
 		
-		'get' => 'SELECT item FROM store WHERE key=?',
-		'set' => 'INSERT OR REPLACE INTO store (key, item) VALUES (?, ?)',
-		'incrby' => 'UPDATE store SET item=item + ? WHERE key=?',
-		'decrby' => 'UPDATE store SET item=item - ? WHERE key=?',
-		
-		'llen' => 'SELECT COUNT(id) FROM list WHERE key=?',
-		'rpush' => 'INSERT INTO list (key, item) VALUES (?, ?)',
-		'lpop' => 'SELECT id, item FROM list WHERE key=? ORDER BY id LIMIT 1',
-		'rpop' => 'SELECT id, item FROM list WHERE key=? ORDER BY id DESC LIMIT 1',
-		'lindex' => 'SELECT id, item FROM list WHERE key=? ORDER BY id LIMIT 1 OFFSET ?',
-		'list_del' => 'DELETE FROM list WHERE id=?',
+		'select_key' 	=> 'SELECT item, expiry FROM redish WHERE key=?',
+		'insert_key' 	=> 'INSERT INTO redish (key, item, expiry) VALUES (?, ?, ?)',
+		'update_key'	=> 'UPDATE redish SET item=?, expiry=? WHERE key=?',
+		'delete_key'	=> 'DELETE FROM redish WHERE key=?',
+		'incrby' 		=> 'UPDATE redish SET item=item + ? WHERE key=?',
+		'decrby' 		=> 'UPDATE redish SET item=item - ? WHERE key=?',
+	
+		'get_keys' 		=> 'SELECT key FROM redish',
+		'get_fuzzy_keys'=> 'SELECT key FROM redish WHERE key LIKE ?',
+	
+		'set_expiry'	=> 'UPDATE redish SET expiry=? WHERE key=?',
+		'expire'		=> 'DELETE FROM redish WHERE expiry IS NOT NULL AND expiry < ?',	
+	
+		'llen' 			=> 'SELECT COUNT(id) FROM redish WHERE key=?',
+		'rpush' 		=> 'INSERT INTO redish (key, item) VALUES (?, ?)',
+		'lpop' 			=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id LIMIT 1',
+		'rpop' 			=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id DESC LIMIT 1',
+		'lindex' 		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id LIMIT 1 OFFSET ?',
+		'list_del' 		=> 'DELETE FROM redish WHERE id=?',
 	);
 	
-	function __construct($file) {
-		$this->conn = new PDO("sqlite:" . $file);
-		//$this->conn = new PDO('sqlite::memory:');
+	function __construct(PDO $pdo, $init=true) {
+		$this->conn = $pdo;
 		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		
-		$this->conn->exec(self::$sql['create_list']);
-		$this->conn->exec(self::$sql['create_store']);
-		$this->conn->exec('PRAGMA synchronous = OFF');
-		//$this->conn->exec('PRAGMA journal_mode=WAL');
+		// skip table creation if not required
+		if($init) {
+			foreach(self::$create_sql as $sql) {
+				$this->conn->exec($sql);
+			}
+		}
+		
+		// expire old items
+		$this->executeStatement('expire', array(time()));
 	}
 	
 	function getStatement($which) {
 		if(!isset($this->cache[$which])) {
 			$this->cache[$which] = $this->conn->prepare(self::$sql[$which]);
-			echo "CREATED {$which}\n";
+			//echo "CREATED {$which}\n";
 		}
 		return $this->cache[$which];
 	}
@@ -79,14 +99,63 @@ class Redish {
 	
 	/*** STORE METHODS ***/
 	
+	/**
+	 * Get the value of key. If the key does not exist the special
+	 * value null is returned. An error is returned if the value stored 
+	 * at key is not a string, because GET only handles string values.
+	 * 
+	 * @param string $key
+	 */
 	function get($key) {
-		$row = $this->executeQuery('get', array($key));
-		return ($row) ? json_decode($row[0]) : null;
+		$row = $this->executeQuery('select_key', array($key));
+		return ($row) ? $row[0] : null;
 	}
 	
+	/**
+	 * Set key to hold the string value. If key already holds a value, 
+	 * it is overwritten, regardless of its type.
+	 * 
+	 * @param string $key
+	 * @param string $value
+	 */
 	function set($key, $value) {
-		$stmt = $this->getStatement('set');
-		$stmt->execute(array($key, json_encode($value)));
+		return $this->setex($key, $value, null);
+	}
+	
+	/**
+	 * Set key to hold the string value and set key to timeout after
+	 * a given number of seconds.
+	 * 
+	 * @param string $key
+	 * @param string $value
+	 * @param integer $seconds
+	 */
+	function setex($key, $value, $seconds) {
+		if($seconds) $seconds += time();
+		$count = $this->executeStatement('update_key', array($value, $seconds, $key));
+		
+		if($count==1) {
+			return;
+		}
+		
+		if($count > 1) {
+			$this->del($key);
+		}
+		
+		$this->executeStatement('insert_key', array($key, $value, $seconds));
+	}
+	
+	function del($key) {
+		$keys = func_get_args();
+		$c = 0;
+		foreach($keys as $key) {
+			$c += $this->executeStatement('delete_key', array($key));
+		}
+		return $c;
+	}
+	
+	function exists($key) {
+		return ($this->get($key) == null) ? 0 : 1;
 	}
 	
 	function incr($key) {
@@ -120,10 +189,41 @@ class Redish {
 		}
 	}
 	
+	function keys($pattern=null) {
+		if($pattern) {
+			
+		} else {
+			$stmt = $this->getStatement('get_keys');
+			$stmt->execute();
+		}
+		return $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+	}
+	
 	// TODO: should be able to append in place...
 	function append($key, $value) {
 		$current = $this->get($key);
 		$this->set($key, $current . $value);
+	}
+	
+	/*** EXPIRY METHODS ***/
+	
+	function ttl($key) {
+		$result = $this->executeQuery('select_key', array($key));
+		if(!$result) return -1;
+		return ($result[1]) ? (int)$result[1] - time() : -1;
+	}
+	
+	function expire($key, $seconds) {
+		return $this->expireat($key, $seconds + time());
+	}
+	
+	function expireat($key, $timestamp) {
+		$items = $this->executeStatement('set_expiry', array($timestamp, $key));
+		return ($items) ? 1 : 0;
+	}
+	
+	function persist($key) {
+		return $this->expireat($key, null);
 	}
 	
 	/*** LIST METHODS ***/
@@ -170,14 +270,14 @@ class Redish {
 		// do everything in an optomised lock
 		
 		while(true) {
-			$this->conn->exec(self::$sql['write_lock']);
+			$this->executeStatement('get_lock');
 			$pop->execute(array($key));
 			$result = $pop->fetch(PDO::FETCH_NUM);
 			$pop->closeCursor();
 			if($result) {
 				$del->execute(array($result[0]));
 			}
-			$this->conn->exec('COMMIT');
+			$this->executeStatement('release_lock');
 			if(!$result && $wait) {
 				usleep(250);
 			} else {

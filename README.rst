@@ -36,9 +36,14 @@ Implemented Functions
 * LPUSH
 * RPUSH
 * LINDEX
+* PUBLISH
+* SUBSCRIBE
+* UNSUBSCRIBE
+* *POLL*
+* *BPOLL*
 
-Cavats
-======
+Caveats
+=======
 Behavior of the above commands should be identical to a redis server with the following exceptions:
 
 :LPUSH / RPUSH:

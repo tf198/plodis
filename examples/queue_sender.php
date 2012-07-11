@@ -1,7 +1,7 @@
 <?php
 include dirname(dirname(__FILE__)) . "/Plodis.php";
 
-$queue = new Plodis(new PDO('sqlite:testing.sq3'));
+$queue = new Plodis(new PDO('sqlite:data/testing.sq3'));
 
 while(true) {
 	$input = trim(fgets(STDIN));

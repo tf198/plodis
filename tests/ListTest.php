@@ -4,8 +4,8 @@ require_once 'Plodis.php';
 class ListTest extends PHPUnit_Framework_TestCase {
 	
 	/**
-	 * Redish object
-	 * @var Redish
+	 * Plodis object
+	 * @var Plodis
 	 */
 	public $db;
 	
@@ -108,6 +108,19 @@ class ListTest extends PHPUnit_Framework_TestCase {
 		
 		$this->assertSame(null, $this->db->linsert('test1', 'after', 'six', 'eight'));
 		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'six', 'eight', 'four'), $this->db->lrange('test1', 0, -1));
+	}
+	
+	function testLRem() {
+		$this->db->rpush('test1', 'one', 'two', 'four', 'three', 'one', 'one', 'two', 'two', 'three', 'three', 'three', 'four');
+		
+		$this->assertSame(3, $this->db->lrem('test1', 0, 'two'));
+		$this->assertSame(9, $this->db->llen('test1'));
+		
+		$this->assertSame(2, $this->db->lrem('test1', 2, 'three'));
+		$this->assertSame(array('one', 'four', 'one', 'one', 'three', 'three', 'four'), $this->db->lrange('test1', 0, -1));
+		
+		$this->assertSame(2, $this->db->lrem('test1', -2, 'one'));
+		$this->assertSame(array('one', 'four', 'three', 'three', 'four'), $this->db->lrange('test1', 0, -1));
 	}
 	
 	function testLPop() {

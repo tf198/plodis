@@ -95,6 +95,8 @@ class Plodis {
 		'l_insert' 		=> 'INSERT INTO plodis (key, item, list_index) VALUES (?, ?, ?)',
 		'l_key_val'		=> 'SELECT id, list_index FROM plodis WHERE key=? AND item=?',
 		'l_shift'		=> 'UPDATE plodis set list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
+		'lrem_forward'	=> 'DELETE FROM plodis WHERE id IN (SELECT id FROM plodis WHERE key=? AND item=? ORDER BY list_index, id LIMIT ?)',
+		'lrem_reverse'	=> 'DELETE FROM plodis WHERE id IN (SELECT id FROM plodis WHERE key=? AND item=? ORDER BY list_index DESC, id DESC LIMIT ?)',
 		'list_del' 		=> 'DELETE FROM plodis WHERE id=?',
 	);
 	
@@ -418,7 +420,14 @@ class Plodis {
 	}
 	
 	function lrem($key, $count, $value) {
+		$s = 'lrem_forward';
+		if($count < 0) {
+			$count = -$count;
+			$s = 'lrem_reverse';
+		}
+		if($count == 0) $count = -1;
 		
+		return $this->executeStatement($s, array($key, $value, $count));
 	}
 	
 	function rpush($key, $values) {
@@ -485,7 +494,12 @@ class Plodis {
 			$result = $pop->fetch(PDO::FETCH_NUM);
 			$pop->closeCursor();
 			if($result) {
-				$del->execute(array($result[0]));
+				try {
+					$del->execute(array($result[0]));
+				} catch(PDOException $e) {
+					var_dump($e->getMessage());
+					$result = null;
+				}
 			}
 			$this->conn->commit();
 			if(!$result && $wait) {
@@ -533,7 +547,11 @@ class Plodis {
 		return count($subscribers);
 	}
 	
-	function receive() {
+	function poll() {
+		return $this->lpop(self::SUBSCRIBER_PREFIX . $this->uid);
+	}
+	
+	function bpoll() {
 		return $this->blpop(self::SUBSCRIBER_PREFIX . $this->uid);
 	}
 }

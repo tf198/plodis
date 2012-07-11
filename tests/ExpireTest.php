@@ -4,8 +4,8 @@ require_once "Plodis.php";
 class ExpireTest extends PHPUnit_Framework_TestCase {
 	
 	/**
-	 * Redish object
-	 * @var Redish
+	 * Plodis object
+	 * @var Plodis
 	 */
 	public $db;
 	

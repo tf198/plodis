@@ -10,6 +10,9 @@
  */
 class Redish {
 	
+	const CHANNEL_PREFIX = '_channel_';
+	const SUBSCRIBER_PREFIX = '_subscriber_';
+	
 	/**
 	 * How often in seconds to purge expired items
 	 * @var float
@@ -45,8 +48,17 @@ class Redish {
 	 * @var multitype:string
 	 */
 	private static $create_sql = array(
-		'create' => 'CREATE TABLE IF NOT EXISTS redish (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB, type NUMERIC, expiry NUMERIC)',
-		'index' => 'CREATE INDEX IF NOT EXISTS store_key ON redish (key)',
+		'CREATE TABLE IF NOT EXISTS redish (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB, list_index NUMERIC, expiry NUMERIC)',
+		'CREATE INDEX IF NOT EXISTS redish_key ON redish (key)',
+		'CREATE INDEX IF NOT EXISTS redish_list_index ON redish (list_index)',
+		'CREATE INDEX IF NOT EXISTS redish_expiry ON redish (expiry)',
+	);
+	
+	private static $opt_sql = array(
+		'PRAGMA case_sensitive_like = 1',
+		'PRAGMA journal_mode = MEMORY',
+		'PRAGMA temp_store = MEMORY',
+		'PRAGMA synchronous = OFF',
 	);
 	
 	/**
@@ -72,25 +84,38 @@ class Redish {
 		'set_expiry'	=> 'UPDATE redish SET expiry=? WHERE key=?',
 		'expire'		=> 'DELETE FROM redish WHERE expiry IS NOT NULL AND expiry < ?',	
 	
-		'lpush_id'		=> 'SELECT MIN(id) from redish',
+		'lpush_index'	=> 'SELECT MIN(list_index) from redish',
 		'llen' 			=> 'SELECT COUNT(id) FROM redish WHERE key=?',
-		'l_forward'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id LIMIT ? OFFSET ?',
-		'l_reverse'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id DESC LIMIT ? OFFSET ?',
-		'l_insert' 		=> 'INSERT INTO redish (id, key, item) VALUES (?, ?, ?)',
-		'l_key_val'		=> 'SELECT id FROM redish WHERE key=? AND item=?',
-		'l_shift'		=> 'UPDATE redish set id = id+1 WHERE id>?',
+		'l_forward'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY list_index, id LIMIT ? OFFSET ?',
+		'l_reverse'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ? OFFSET ?',
+		'l_insert' 		=> 'INSERT INTO redish (key, item, list_index) VALUES (?, ?, ?)',
+		'l_key_val'		=> 'SELECT id, list_index FROM redish WHERE key=? AND item=?',
+		'l_shift'		=> 'UPDATE redish set list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
 		'list_del' 		=> 'DELETE FROM redish WHERE id=?',
 	);
 	
 	private $alarm = 0;
 	
-	function __construct(PDO $pdo, $init=true) {
+	private $uid;
+	
+	private $subscribed = array();
+	
+	function __construct(PDO $pdo, $init=true, $opt=true) {
 		$this->conn = $pdo;
 		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		
+		$this->uid = uniqid();
+		
 		// skip table creation if not required
 		if($init) {
+			
 			foreach(self::$create_sql as $sql) {
+				$this->conn->exec($sql);
+			}
+		}
+		
+		if($opt == true) {
+			foreach(self::$opt_sql as $sql) {
 				$this->conn->exec($sql);
 			}
 		}
@@ -136,19 +161,25 @@ class Redish {
 		fputs(STDERR, "\n\n");
 		while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 			$time = ($row['expiry']) ? $row['expiry'] - time() : 'inf';
-			fprintf(STDERR, "%3d %3s %-10s %s\n", $row['id'], $time, $row['key'], $row['item']);
+			fprintf(STDERR, "%3d %3d %3s %-10s %s\n", $row['id'], $row['list_index'], $time, $row['key'], $row['item']);
+		}
+	}
+	
+	public function complexity() {
+		foreach(self::$sql as $key=>$sql) {
+			$stmt = $this->conn->prepare('EXPLAIN QUERY PLAN ' . $sql);
+			$stmt->execute();
+			$data = $stmt->fetchAll(PDO::FETCH_COLUMN, 3);
+			fputs(STDERR, "\n\n=== {$key} ===\n");
+			fputs(STDERR, "-- {$sql} --\n");
+			foreach($data as $line) {
+				fputs(STDERR, $line . PHP_EOL);
+			}
 		}
 	}
 	
 	/*** STORE METHODS ***/
 	
-	/**
-	 * Get the value of key. If the key does not exist the special
-	 * value null is returned. An error is returned if the value stored 
-	 * at key is not a string, because GET only handles string values.
-	 * 
-	 * @param string $key
-	 */
 	function get($key) {
 		if(microtime(true) > $this->alarm) {
 			$this->purgeExpired();
@@ -160,25 +191,10 @@ class Redish {
 		return $row[0];
 	}
 	
-	/**
-	 * Set key to hold the string value. If key already holds a value, 
-	 * it is overwritten, regardless of its type.
-	 * 
-	 * @param string $key
-	 * @param string $value
-	 */
 	function set($key, $value) {
 		return $this->setex($key, $value, null);
 	}
 	
-	/**
-	 * Set key to hold the string value and set key to timeout after
-	 * a given number of seconds.
-	 * 
-	 * @param string $key
-	 * @param string $value
-	 * @param integer $seconds
-	 */
 	function setex($key, $value, $seconds) {
 		if(is_object($value)) throw new RuntimeException("Cannot convert object to string");
 		if(is_array($value)) throw new RuntimeException("Cannot convert array to string");
@@ -358,18 +374,42 @@ class Redish {
 		return $data;
 	}
 	
+	function linsert($key, $pos, $pivot, $value) {
+		// make atomic
+		$this->conn->beginTransaction();
+		
+		$item = $this->executeQuery('l_key_val', array($key, $pivot));
+		if(!$item) {
+			$this->commit();
+			return -1;
+		}
+		
+		if($pos == 'before') $item[0]--;
+		
+		$this->executeQuery('l_shift', $item);
+		$this->executeQuery('l_insert', array($key, $value, $item[1]));
+		
+		$this->conn->commit();
+		
+		if(self::$strict) {
+			return $this->llen($key);
+		}
+	}
+	
+	function lrem($key, $count, $value) {
+		
+	}
+	
 	function rpush($key, $values) {
 		if(!is_array($values)) $values = array_slice(func_get_args(), 1);
 		
 		$stmt = $this->getStatement('l_insert');
 		foreach($values as $value) {
-			$stmt->execute(array(null, $key, $value));
+			$stmt->execute(array($key, $value, 0));
 		}
 		
 		if(self::$strict) {
 			return $this->llen($key);
-		} else {
-			return -1;
 		}
 	}
 	
@@ -380,20 +420,18 @@ class Redish {
 		$this->conn->beginTransaction();
 		
 		// find the lowest id
-		$id = $this->executeQuery('lpush_id');
+		$id = $this->executeQuery('lpush_index');
 		$id = ($id) ? $id[0] - 1 : -1;
 		
 		$stmt = $this->getStatement('l_insert');
 		foreach($values as $value) {
-			$stmt->execute(array($id--, $key, $value));
+			$stmt->execute(array($key, $value, $id--));
 		}
 		
 		$this->conn->commit();
 		
 		if(self::$strict) {
 			return $this->llen($key);
-		} else {
-			return -1;
 		}
 	}
 	
@@ -437,5 +475,44 @@ class Redish {
 		}
 		
 		return ($result) ? $result[1] : null;
+	}
+	
+	/*** PUB / SUB METHODS ***/
+	
+	private function _channels($channels) {
+		foreach($channels as &$channel) {
+			$channel = "_channel_" . $channel;
+		}
+		return $channels;
+	}
+	
+	function subscribe($channels) {
+		if(!is_array($channels)) $channels = func_get_args();
+		
+		foreach($channels as $channel) {
+			$this->rpush(self::CHANNEL_PREFIX . $channel, $this->uid);
+			//$this->publish($channel, "{$this->uid} joined channel {$channel}");
+		}
+	}
+	
+	function unsubscribe($channels) {
+		if(!is_array($channels)) $channels = func_get_args();
+		
+		foreach($channels as $channel) {
+			$this->lrem(self::CHANNEL_PREFIX . $channel, 1, $this->uid);
+		}
+	}
+	
+	function publish($channel, $message) {
+		$subscribers = $this->lrange(self::CHANNEL_PREFIX . $channel, 0, -1);
+		foreach($subscribers as $subscriber) {
+			$this->rpush(self::SUBSCRIBER_PREFIX . $subscriber, $message);
+		}
+		//$this->debug();
+		return count($subscribers);
+	}
+	
+	function receive() {
+		return $this->blpop(self::SUBSCRIBER_PREFIX . $this->uid);
 	}
 }

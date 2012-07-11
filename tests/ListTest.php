@@ -16,11 +16,11 @@ class ListTest extends PHPUnit_Framework_TestCase {
 	}
 	
 	function testRPush() {
-		$this->assertSame(-1, $this->db->rpush('test1', 'one'));
-		$this->assertSame(-1, $this->db->rpush('test1', 'two'));
+		$this->assertSame(null, $this->db->rpush('test1', 'one'));
+		$this->assertSame(null, $this->db->rpush('test1', 'two'));
 		
 		// multi insert
-		$this->assertSame(-1, $this->db->rpush('test1', 'three', 'four'));
+		$this->assertSame(null, $this->db->rpush('test1', 'three', 'four'));
 		
 		// strict behavior
 		Redish::$strict = true;
@@ -33,11 +33,11 @@ class ListTest extends PHPUnit_Framework_TestCase {
 	}
 	
 	function testLPush() {
-		$this->assertSame(-1, $this->db->lpush('test1', 'one'));
-		$this->assertSame(-1, $this->db->lpush('test1', 'two'));
+		$this->assertSame(null, $this->db->lpush('test1', 'one'));
+		$this->assertSame(null, $this->db->lpush('test1', 'two'));
 		
 		// multi insert
-		$this->assertSame(-1, $this->db->lpush('test1', 'three', 'four'));
+		$this->assertSame(null, $this->db->lpush('test1', 'three', 'four'));
 		
 		// strict behavior
 		Redish::$strict = true;
@@ -93,13 +93,23 @@ class ListTest extends PHPUnit_Framework_TestCase {
 		$this->assertSame('two', $this->db->lindex('test1', -3));
 		$this->assertSame(null, $this->db->lindex('test1', -5));
 	}
-	/*
+	
 	function testLInsert() {
 		$this->db->rpush('test1', 'one', 'two', 'three', 'four');
 		
-		$this->assertSame(-1, $this->db->linsert('test1', 'before', 'two', 'five'));
+		$this->assertSame(null, $this->db->linsert('test1', 'before', 'two', 'five'));
+		$this->assertSame(array('one', 'five', 'two', 'three', 'four'), $this->db->lrange('test1', 0, -1));
+		
+		$this->assertSame(null, $this->db->linsert('test1', 'after', 'three', 'six'));
+		$this->assertSame(array('one', 'five', 'two', 'three', 'six', 'four'), $this->db->lrange('test1', 0, -1));
+		
+		$this->assertSame(null, $this->db->linsert('test1', 'before', 'one', 'seven'));
+		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'six', 'four'), $this->db->lrange('test1', 0, -1));
+		
+		$this->assertSame(null, $this->db->linsert('test1', 'after', 'six', 'eight'));
+		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'six', 'eight', 'four'), $this->db->lrange('test1', 0, -1));
 	}
-	*/
+	
 	function testLPop() {
 		$this->assertSame(null, $this->db->lpop('test1'));
 		$this->db->rpush('test1', 'one', 'two', 'three');

@@ -54,9 +54,10 @@ class Redish {
 	 * @var multitype:string
 	 */
 	private static $sql = array(
-		'get_lock' 		=> 'BEGIN IMMEDIATE',
+		'get_lock' 		=> 'BEGIN IMMEDIATE', // not sure we need this
 		'release_lock' 	=> 'COMMIT',
 		'alarm'			=> 'SELECT MIN(expiry) FROM redish WHERE expiry IS NOT NULL',
+		'dump'			=> 'SELECT * FROM redish',
 		
 		'select_key' 	=> 'SELECT item, expiry FROM redish WHERE key=?',
 		'insert_key' 	=> 'INSERT INTO redish (key, item, expiry) VALUES (?, ?, ?)',
@@ -71,10 +72,13 @@ class Redish {
 		'set_expiry'	=> 'UPDATE redish SET expiry=? WHERE key=?',
 		'expire'		=> 'DELETE FROM redish WHERE expiry IS NOT NULL AND expiry < ?',	
 	
+		'lpush_id'		=> 'SELECT MIN(id) from redish',
 		'llen' 			=> 'SELECT COUNT(id) FROM redish WHERE key=?',
 		'l_forward'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id LIMIT ? OFFSET ?',
-		'l_backward'	=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id DESC LIMIT ? OFFSET ?',
-		'rpush' 		=> 'INSERT INTO redish (key, item) VALUES (?, ?)',
+		'l_reverse'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id DESC LIMIT ? OFFSET ?',
+		'l_insert' 		=> 'INSERT INTO redish (id, key, item) VALUES (?, ?, ?)',
+		'l_key_val'		=> 'SELECT id FROM redish WHERE key=? AND item=?',
+		'l_shift'		=> 'UPDATE redish set id = id+1 WHERE id>?',
 		'list_del' 		=> 'DELETE FROM redish WHERE id=?',
 	);
 	
@@ -124,6 +128,16 @@ class Redish {
 		$stmt = $this->getStatement($which);
 		$stmt->execute($params);
 		return $stmt->rowCount();
+	}
+	
+	public function debug() {
+		$stmt = $this->getStatement('dump');
+		$stmt->execute();
+		fputs(STDERR, "\n\n");
+		while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+			$time = ($row['expiry']) ? $row['expiry'] - time() : 'inf';
+			fprintf(STDERR, "%3d %3s %-10s %s\n", $row['id'], $time, $row['key'], $row['item']);
+		}
 	}
 	
 	/*** STORE METHODS ***/
@@ -300,26 +314,56 @@ class Redish {
 	}
 	
 	function lindex($key, $index) {
-		$row = $this->executeQuery('lindex', array($key, $index));
+		$s = 'l_forward';
+		if($index < 0) {
+			$s = 'l_reverse';
+			$index = -$index - 1;
+		}
+		$row = $this->executeQuery($s, array($key, 1, $index));
 		return $row[1];
 	}
 	
 	function lrange($key, $start, $stop) {
 		$s = 'l_forward';
+		$flip = false;
+		$slice = false;
+		
+		if($start < 0 && $stop < 0) {
+			$s = 'l_reverse';
+			$start = -$start - 2;
+			$stop  = -$stop;
+			$flip = true;
+		}
+		
 		$offset = $start;
-		$limit = $offset-$start+1;
+		$limit = ($stop < 0) ? -1 : $stop-$start+1;
+		
+		//fprintf(STDERR, "%d %d -> LIMIT %d OFFSET %d\n", $start, $stop, $limit, $offset);
 		
 		$stmt = $this->getStatement($s);
 		$stmt->execute(array($key, $limit, $offset));
 		
-		return $stmt->fetchAll(PDO::FETCH_COLUMN, 1);
+		$data = $stmt->fetchAll(PDO::FETCH_COLUMN, 1);
+		
+		// reverse queries
+		if($flip) {
+			$data = array_reverse($data);
+		}
+		
+		// need to slice negative stops
+		if($stop < -1) {
+			$data = array_slice($data, 0, $stop+1);
+		}
+		
+		return $data;
 	}
 	
-	function rpush($key, $obj) {
-		$stmt = $this->getStatement('rpush');
-		$objs = func_get_args();
-		for($i=1; $i<count($objs); $i++) {
-			$stmt->execute(array($key, $objs[$i]));
+	function rpush($key, $values) {
+		if(!is_array($values)) $values = array_slice(func_get_args(), 1);
+		
+		$stmt = $this->getStatement('l_insert');
+		foreach($values as $value) {
+			$stmt->execute(array(null, $key, $value));
 		}
 		
 		if(self::$strict) {
@@ -329,8 +373,28 @@ class Redish {
 		}
 	}
 	
-	function lpush($key, $obj) {
-		throw new Exception("Not implemented");
+	function lpush($key, $values) {
+		if(!is_array($values)) $values = array_slice(func_get_args(), 1);
+		
+		// have to transaction this
+		$this->conn->beginTransaction();
+		
+		// find the lowest id
+		$id = $this->executeQuery('lpush_id');
+		$id = ($id) ? $id[0] - 1 : -1;
+		
+		$stmt = $this->getStatement('l_insert');
+		foreach($values as $value) {
+			$stmt->execute(array($id--, $key, $value));
+		}
+		
+		$this->conn->commit();
+		
+		if(self::$strict) {
+			return $this->llen($key);
+		} else {
+			return -1;
+		}
 	}
 	
 	function lpop($key) {
@@ -338,7 +402,7 @@ class Redish {
 	}
 	
 	function rpop($key) {
-		return $this->_pop($key, 'r_reverse');
+		return $this->_pop($key, 'l_reverse');
 	}
 	
 	function blpop($key) {
@@ -349,7 +413,7 @@ class Redish {
 		return $this->_pop($key, 'l_reverse', true);
 	}
 	
-	function _pop($key, $type, $wait=false) {
+	private function _pop($key, $type, $wait=false) {
 		$pop = $this->getStatement($type);
 		$del = $this->getStatement('list_del');
 		
@@ -357,14 +421,14 @@ class Redish {
 		$us = self::$poll_frequency * 1000000;
 		
 		while(true) {
-			$this->executeStatement('get_lock');
+			$this->conn->beginTransaction();
 			$pop->execute(array($key, 1, 0));
 			$result = $pop->fetch(PDO::FETCH_NUM);
 			$pop->closeCursor();
 			if($result) {
 				$del->execute(array($result[0]));
 			}
-			$this->executeStatement('release_lock');
+			$this->conn->commit();
 			if(!$result && $wait) {
 				usleep($us);
 			} else {

@@ -1,8 +1,9 @@
-Red-ish
--------
+Plodis
+------
 
-Implements the most commonly used Redis functions using a PDO backend.  Useful for prototyping where you
-dont have a Redis server available or small deployments.
+\ **P**\ HP **Lo**\ cal **Di**\ ctionary **S**\ ervice implements the most commonly used 
+Redis functions using a PDO backend.  Intended for prototyping where you
+dont have a Redis server available or deployment to hosted servers where unable to install Redis.
 
 Implemented Functions
 =====================

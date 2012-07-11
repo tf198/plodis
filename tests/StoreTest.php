@@ -1,5 +1,5 @@
 <?php
-require_once "Redish.php";
+require_once "Plodis.php";
 
 class StoreTest extends PHPUnit_Framework_TestCase {
 	
@@ -10,7 +10,7 @@ class StoreTest extends PHPUnit_Framework_TestCase {
 	public $db;
 	
 	function setUp() {
-		$this->db = new Redish(new PDO('sqlite::memory:'));
+		$this->db = new Plodis(new PDO('sqlite::memory:'));
 	}
 	
 	function testGet() {

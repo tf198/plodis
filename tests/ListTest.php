@@ -1,5 +1,5 @@
 <?php
-require_once 'Redish.php';
+require_once 'Plodis.php';
 
 class ListTest extends PHPUnit_Framework_TestCase {
 	
@@ -10,7 +10,7 @@ class ListTest extends PHPUnit_Framework_TestCase {
 	public $db;
 	
 	function setUp() {
-		$this->db = new Redish(new PDO('sqlite::memory:'));
+		$this->db = new Plodis(new PDO('sqlite::memory:'));
 		// add some data so we are not fresh
 		$this->db->mset(array('a' => 'a', 'b' => 'b'));
 	}
@@ -23,10 +23,10 @@ class ListTest extends PHPUnit_Framework_TestCase {
 		$this->assertSame(null, $this->db->rpush('test1', 'three', 'four'));
 		
 		// strict behavior
-		Redish::$strict = true;
+		Plodis::$strict = true;
 		$this->assertSame(5, $this->db->rpush('test1', 'five'));
 		$this->assertSame(7, $this->db->rpush('test1', 'six', 'seven'));
-		Redish::$strict = false;
+		Plodis::$strict = false;
 		
 		// check result
 		$this->assertSame(array('one', 'two', 'three', 'four', 'five', 'six', 'seven'), $this->db->lrange('test1', 0, -1));
@@ -40,10 +40,10 @@ class ListTest extends PHPUnit_Framework_TestCase {
 		$this->assertSame(null, $this->db->lpush('test1', 'three', 'four'));
 		
 		// strict behavior
-		Redish::$strict = true;
+		Plodis::$strict = true;
 		$this->assertSame(5, $this->db->lpush('test1', 'five'));
 		$this->assertSame(7, $this->db->lpush('test1', 'six', 'seven'));
-		Redish::$strict = false;
+		Plodis::$strict = false;
 		
 		// check result
 		$this->assertSame(array('seven', 'six', 'five', 'four', 'three', 'two', 'one'), $this->db->lrange('test1', 0, -1));

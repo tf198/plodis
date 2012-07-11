@@ -1,5 +1,5 @@
 <?php
-require_once "Redish.php";
+require_once "Plodis.php";
 
 class ExpireTest extends PHPUnit_Framework_TestCase {
 	
@@ -10,7 +10,7 @@ class ExpireTest extends PHPUnit_Framework_TestCase {
 	public $db;
 	
 	function setUp() {
-		$this->db = new Redish(new PDO('sqlite::memory:'));
+		$this->db = new Plodis(new PDO('sqlite::memory:'));
 	}
 	
 	function testExpire() {
@@ -91,7 +91,7 @@ class ExpireTest extends PHPUnit_Framework_TestCase {
 		
 		$this->db->expireat('test1', time()-1);
 		
-		$this->db = new Redish($this->db->conn);
+		$this->db = new Plodis($this->db->conn);
 		
 		$this->assertSame(null, $this->db->get('test1'));
 	}

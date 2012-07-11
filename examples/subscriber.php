@@ -1,11 +1,11 @@
 <?php
-include dirname(dirname(__FILE__)) . "/Redish.php";
+include dirname(dirname(__FILE__)) . "/Plodis.php";
 
-$redis = new Redish(new PDO('sqlite:testing.sq3'));
+$plodis = new Plodis(new PDO('sqlite:testing.sq3'));
 
-$redis->subscribe('test-channel');
+$plodis->subscribe('test-channel');
 
 while(true) {
-	$item = $redis->receive();
+	$item = $plodis->receive();
 	echo "GOT {$item}\n";
 }

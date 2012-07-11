@@ -8,7 +8,7 @@
  *
  * @see http://flask.pocoo.org/snippets/88/
  */
-class Redish {
+class Plodis {
 	
 	const CHANNEL_PREFIX = '_channel_';
 	const SUBSCRIBER_PREFIX = '_subscriber_';
@@ -48,12 +48,16 @@ class Redish {
 	 * @var multitype:string
 	 */
 	private static $create_sql = array(
-		'CREATE TABLE IF NOT EXISTS redish (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB, list_index NUMERIC, expiry NUMERIC)',
-		'CREATE INDEX IF NOT EXISTS redish_key ON redish (key)',
-		'CREATE INDEX IF NOT EXISTS redish_list_index ON redish (list_index)',
-		'CREATE INDEX IF NOT EXISTS redish_expiry ON redish (expiry)',
+		'CREATE TABLE IF NOT EXISTS plodis (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB, list_index NUMERIC, expiry NUMERIC)',
+		'CREATE INDEX IF NOT EXISTS plodis_key ON plodis (key)',
+		'CREATE INDEX IF NOT EXISTS plodis_list_index ON plodis (list_index)',
+		'CREATE INDEX IF NOT EXISTS plodis_expiry ON plodis (expiry)',
 	);
 	
+	/**
+	 * SQL to optomise file based SQLite databases
+	 * @var multitype:string
+	 */
 	private static $opt_sql = array(
 		'PRAGMA case_sensitive_like = 1',
 		'PRAGMA journal_mode = MEMORY',
@@ -68,38 +72,55 @@ class Redish {
 	private static $sql = array(
 		'get_lock' 		=> 'BEGIN IMMEDIATE', // not sure we need this
 		'release_lock' 	=> 'COMMIT',
-		'alarm'			=> 'SELECT MIN(expiry) FROM redish WHERE expiry IS NOT NULL',
-		'dump'			=> 'SELECT * FROM redish',
+		'alarm'			=> 'SELECT MIN(expiry) FROM plodis WHERE expiry IS NOT NULL',
+		'dump'			=> 'SELECT * FROM plodis',
 		
-		'select_key' 	=> 'SELECT item, expiry FROM redish WHERE key=?',
-		'insert_key' 	=> 'INSERT INTO redish (key, item, expiry) VALUES (?, ?, ?)',
-		'update_key'	=> 'UPDATE redish SET item=?, expiry=? WHERE key=?',
-		'delete_key'	=> 'DELETE FROM redish WHERE key=?',
-		'incrby' 		=> 'UPDATE redish SET item=item + ? WHERE key=?',
-		'decrby' 		=> 'UPDATE redish SET item=item - ? WHERE key=?',
+		'select_key' 	=> 'SELECT item, expiry FROM plodis WHERE key=?',
+		'insert_key' 	=> 'INSERT INTO plodis (key, item, expiry) VALUES (?, ?, ?)',
+		'update_key'	=> 'UPDATE plodis SET item=?, expiry=? WHERE key=?',
+		'delete_key'	=> 'DELETE FROM plodis WHERE key=?',
+		'incrby' 		=> 'UPDATE plodis SET item=item + ? WHERE key=?',
+		'decrby' 		=> 'UPDATE plodis SET item=item - ? WHERE key=?',
 	
-		'get_keys' 		=> 'SELECT key FROM redish',
-		'get_fuzzy_keys'=> 'SELECT key FROM redish WHERE key LIKE ?',
+		'get_keys' 		=> 'SELECT key FROM plodis',
+		'get_fuzzy_keys'=> 'SELECT key FROM plodis WHERE key LIKE ?',
 	
-		'set_expiry'	=> 'UPDATE redish SET expiry=? WHERE key=?',
-		'expire'		=> 'DELETE FROM redish WHERE expiry IS NOT NULL AND expiry < ?',	
+		'set_expiry'	=> 'UPDATE plodis SET expiry=? WHERE key=?',
+		'expire'		=> 'DELETE FROM plodis WHERE expiry IS NOT NULL AND expiry < ?',	
 	
-		'lpush_index'	=> 'SELECT MIN(list_index) from redish',
-		'llen' 			=> 'SELECT COUNT(id) FROM redish WHERE key=?',
-		'l_forward'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY list_index, id LIMIT ? OFFSET ?',
-		'l_reverse'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ? OFFSET ?',
-		'l_insert' 		=> 'INSERT INTO redish (key, item, list_index) VALUES (?, ?, ?)',
-		'l_key_val'		=> 'SELECT id, list_index FROM redish WHERE key=? AND item=?',
-		'l_shift'		=> 'UPDATE redish set list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
-		'list_del' 		=> 'DELETE FROM redish WHERE id=?',
+		'lpush_index'	=> 'SELECT MIN(list_index) from plodis',
+		'llen' 			=> 'SELECT COUNT(id) FROM plodis WHERE key=?',
+		'l_forward'		=> 'SELECT id, item FROM plodis WHERE key=? ORDER BY list_index, id LIMIT ? OFFSET ?',
+		'l_reverse'		=> 'SELECT id, item FROM plodis WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ? OFFSET ?',
+		'l_insert' 		=> 'INSERT INTO plodis (key, item, list_index) VALUES (?, ?, ?)',
+		'l_key_val'		=> 'SELECT id, list_index FROM plodis WHERE key=? AND item=?',
+		'l_shift'		=> 'UPDATE plodis set list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
+		'list_del' 		=> 'DELETE FROM plodis WHERE id=?',
 	);
 	
+	/**
+	 * An alarm for expiring keys
+	 * @var integer
+	 */
 	private $alarm = 0;
 	
+	/**
+	 * Unique identifier for this client
+	 * @var string
+	 */
 	private $uid;
 	
+	/**
+	 * List of subscribed channels
+	 * @var multitype:string
+	 */
 	private $subscribed = array();
 	
+	/**
+	 * @param PDO $pdo
+	 * @param boolean $init create tables if neccesary
+	 * @param boolean $opt run SQLite optomisations
+	 */
 	function __construct(PDO $pdo, $init=true, $opt=true) {
 		$this->conn = $pdo;
 		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

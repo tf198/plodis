@@ -11,6 +11,24 @@
 class Redish {
 	
 	/**
+	 * How often in seconds to purge expired items
+	 * @var float
+	 */
+	public static $purge_frequency = 0.2;
+	
+	/**
+	 * How often in seconds to poll for blocking operations
+	 * @var int
+	 */
+	public static $poll_frequency = 0.1;
+	
+	/**
+	 * Whether to use strict emulation
+	 * @var boolean
+	 */
+	public static $strict = false;
+	
+	/**
 	 * PDO object
 	 * @var PDO
 	 */
@@ -20,7 +38,7 @@ class Redish {
 	 * Cache our PDOStatements
 	 * @var multitype:PDOStatement
 	 */
-	private $cache = array();
+	private $stmt_cache = array();
 	
 	/**
 	 * SQL to setup tables
@@ -36,8 +54,9 @@ class Redish {
 	 * @var multitype:string
 	 */
 	private static $sql = array(
-		'get_lock' => 'BEGIN IMMEDIATE',
-		'release_lock' => 'COMMIT',
+		'get_lock' 		=> 'BEGIN IMMEDIATE',
+		'release_lock' 	=> 'COMMIT',
+		'alarm'			=> 'SELECT MIN(expiry) FROM redish WHERE expiry IS NOT NULL',
 		
 		'select_key' 	=> 'SELECT item, expiry FROM redish WHERE key=?',
 		'insert_key' 	=> 'INSERT INTO redish (key, item, expiry) VALUES (?, ?, ?)',
@@ -53,12 +72,13 @@ class Redish {
 		'expire'		=> 'DELETE FROM redish WHERE expiry IS NOT NULL AND expiry < ?',	
 	
 		'llen' 			=> 'SELECT COUNT(id) FROM redish WHERE key=?',
+		'l_forward'		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id LIMIT ? OFFSET ?',
+		'l_backward'	=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id DESC LIMIT ? OFFSET ?',
 		'rpush' 		=> 'INSERT INTO redish (key, item) VALUES (?, ?)',
-		'lpop' 			=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id LIMIT 1',
-		'rpop' 			=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id DESC LIMIT 1',
-		'lindex' 		=> 'SELECT id, item FROM redish WHERE key=? ORDER BY id LIMIT 1 OFFSET ?',
 		'list_del' 		=> 'DELETE FROM redish WHERE id=?',
 	);
+	
+	private $alarm = 0;
 	
 	function __construct(PDO $pdo, $init=true) {
 		$this->conn = $pdo;
@@ -72,18 +92,27 @@ class Redish {
 		}
 		
 		// expire old items
-		$this->executeStatement('expire', array(time()));
+		$this->purgeExpired();
+	}
+	
+	private function purgeExpired() {
+		$now = microtime(true);
+		$this->executeStatement('expire', array($now));
+		
+		// set a new alarm
+		$result = $this->executeQuery('alarm');
+		$this->alarm = ($result[0]) ? $result[0] : $now + self::$purge_frequency;
 	}
 	
 	function getStatement($which) {
-		if(!isset($this->cache[$which])) {
-			$this->cache[$which] = $this->conn->prepare(self::$sql[$which]);
+		if(!isset($this->stmt_cache[$which])) {
+			$this->stmt_cache[$which] = $this->conn->prepare(self::$sql[$which]);
 			//echo "CREATED {$which}\n";
 		}
-		return $this->cache[$which];
+		return $this->stmt_cache[$which];
 	}
 	
-	function executeQuery($which, $params) {
+	private function executeQuery($which, $params=array()) {
 		$stmt = $this->getStatement($which);
 		$stmt->execute($params);
 		$result = $stmt->fetch(PDO::FETCH_NUM);
@@ -91,7 +120,7 @@ class Redish {
 		return $result;
 	}
 	
-	function executeStatement($which, $params) {
+	private function executeStatement($which, $params=array()) {
 		$stmt = $this->getStatement($which);
 		$stmt->execute($params);
 		return $stmt->rowCount();
@@ -107,8 +136,14 @@ class Redish {
 	 * @param string $key
 	 */
 	function get($key) {
+		if(microtime(true) > $this->alarm) {
+			$this->purgeExpired();
+		}
 		$row = $this->executeQuery('select_key', array($key));
-		return ($row) ? $row[0] : null;
+		if(!$row) {
+			return null;
+		}
+		return $row[0];
 	}
 	
 	/**
@@ -131,6 +166,9 @@ class Redish {
 	 * @param integer $seconds
 	 */
 	function setex($key, $value, $seconds) {
+		if(is_object($value)) throw new RuntimeException("Cannot convert object to string");
+		if(is_array($value)) throw new RuntimeException("Cannot convert array to string");
+		
 		if($seconds) $seconds += time();
 		$count = $this->executeStatement('update_key', array($value, $seconds, $key));
 		
@@ -178,8 +216,8 @@ class Redish {
 		}
 	}
 	
-	function mget() {
-		$keys = func_get_args();
+	function mget($keys) {
+		if(!is_array($keys)) $keys = func_get_args();
 		return array_map(array($this, 'get'), $keys);
 	}
 	
@@ -191,7 +229,9 @@ class Redish {
 	
 	function keys($pattern=null) {
 		if($pattern) {
-			
+			$stmt = $this->getStatement('get_fuzzy_keys');
+			$pattern = str_replace('*', '%', $pattern);
+			$stmt->execute(array($pattern));
 		} else {
 			$stmt = $this->getStatement('get_keys');
 			$stmt->execute();
@@ -201,16 +241,20 @@ class Redish {
 	
 	// TODO: should be able to append in place...
 	function append($key, $value) {
-		$current = $this->get($key);
-		$this->set($key, $current . $value);
+		$new = $this->get($key) . $value;
+		$this->set($key, $new);
+		return strlen($new);
 	}
 	
 	/*** EXPIRY METHODS ***/
 	
 	function ttl($key) {
 		$result = $this->executeQuery('select_key', array($key));
-		if(!$result) return -1;
-		return ($result[1]) ? (int)$result[1] - time() : -1;
+		if(!$result || !$result[1]) {
+			return -1;
+		}
+		$ts = (int) $result[1] - time();
+		return ($ts < 0) ? -1 : $ts;
 	}
 	
 	function expire($key, $seconds) {
@@ -219,6 +263,9 @@ class Redish {
 	
 	function expireat($key, $timestamp) {
 		$items = $this->executeStatement('set_expiry', array($timestamp, $key));
+		if($timestamp < $this->alarm) {
+			$this->alarm = $timestamp;
+		}
 		return ($items) ? 1 : 0;
 	}
 	
@@ -226,11 +273,30 @@ class Redish {
 		return $this->expireat($key, null);
 	}
 	
+	function pexpire($key, $milliseconds) {
+		return $this->expireat($key, microtime(true) + ($milliseconds/1000));
+	}
+	
+	function pexpireat($key, $timestamp) {
+		return $this->expireat($key, $timestamp);
+	}
+	
+	function pttl($key) {
+		$result = $this->executeQuery('select_key', array($key));
+		if(!$result || !$result[1]) {
+			return -1;
+		}
+		
+		$ts = (float)$result[1] - microtime(true);
+		$ms = (int) round($ts * 1000);
+		return ($ms < 0) ? -1 : $ms;
+	}
+	
 	/*** LIST METHODS ***/
 	
 	function llen($key) {
 		$row = $this->executeQuery('llen', array($key));
-		return $row[0];
+		return (int) $row[0];
 	}
 	
 	function lindex($key, $index) {
@@ -238,9 +304,29 @@ class Redish {
 		return $row[1];
 	}
 	
+	function lrange($key, $start, $stop) {
+		$s = 'l_forward';
+		$offset = $start;
+		$limit = $offset-$start+1;
+		
+		$stmt = $this->getStatement($s);
+		$stmt->execute(array($key, $limit, $offset));
+		
+		return $stmt->fetchAll(PDO::FETCH_COLUMN, 1);
+	}
+	
 	function rpush($key, $obj) {
 		$stmt = $this->getStatement('rpush');
-		$stmt->execute(array($key, json_encode($obj)));
+		$objs = func_get_args();
+		for($i=1; $i<count($objs); $i++) {
+			$stmt->execute(array($key, $objs[$i]));
+		}
+		
+		if(self::$strict) {
+			return $this->llen($key);
+		} else {
+			return -1;
+		}
 	}
 	
 	function lpush($key, $obj) {
@@ -248,19 +334,19 @@ class Redish {
 	}
 	
 	function lpop($key) {
-		return $this->_pop($key, 'lpop');
+		return $this->_pop($key, 'l_forward');
 	}
 	
 	function rpop($key) {
-		return $this->_pop($key, 'rpop');
+		return $this->_pop($key, 'r_reverse');
 	}
 	
 	function blpop($key) {
-		return $this->_pop($key, 'lpop', true);
+		return $this->_pop($key, 'l_forward', true);
 	}
 	
 	function brpop($key) {
-		return $this->_pop($key, 'rpop', true);
+		return $this->_pop($key, 'l_reverse', true);
 	}
 	
 	function _pop($key, $type, $wait=false) {
@@ -268,10 +354,11 @@ class Redish {
 		$del = $this->getStatement('list_del');
 		
 		// do everything in an optomised lock
+		$us = self::$poll_frequency * 1000000;
 		
 		while(true) {
 			$this->executeStatement('get_lock');
-			$pop->execute(array($key));
+			$pop->execute(array($key, 1, 0));
 			$result = $pop->fetch(PDO::FETCH_NUM);
 			$pop->closeCursor();
 			if($result) {
@@ -279,12 +366,12 @@ class Redish {
 			}
 			$this->executeStatement('release_lock');
 			if(!$result && $wait) {
-				usleep(250);
+				usleep($us);
 			} else {
 				break;
 			}
 		}
 		
-		return ($result) ? json_decode($result[1]) : null;
+		return ($result) ? $result[1] : null;
 	}
 }

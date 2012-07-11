@@ -1,7 +1,7 @@
 <?php
 include dirname(dirname(__FILE__)) . "/Redish.php";
 
-$queue = new Redish('testing.sq3');
+$queue = new Redish(new PDO('sqlite:testing.sq3'));
 
 while(true) {
 	$item = $queue->blpop('queue-test');

@@ -15,24 +15,24 @@ one or two changes - will update when I know for sure...
 
 Current Status
 ==============
-Built against Redis 2.2.6 with certain modules disabled:
+Built against Redis 2.6.0 with certain modules disabled and a few gaps:
 
 :Generic (Keys):
-   Full coverage.
+   Partial coverage. Need to finish 2.0.0.
 :Strings:
-   Full coverage.
+   Full coverage up to 2.0.0. Methods from 2.6.0 present as stubs.
 :Hashes:
    Not implemented.
 :List:
-   Full coverage.
+   Full coverage up to 2.0.0, plus LINSERT.
 :Sets:
    Not implemented.
 :Sorted Sets:
    Not implemented.
 :Pub/Sub:
-   Full coverage.
+   Full coverage except PSUBSCRIBE and PUNSUBSCRIBE
 :Transaction:
-   Partial...
+   Background implementation.
 :Scripting:
    Not implemented.
 :Connection:

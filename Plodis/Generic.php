@@ -137,7 +137,6 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		throw new PlodisNotImplementedError;
 	}
 	
-	
 	function type($key) {
 		throw new PlodisNotImplementedError;
 	}

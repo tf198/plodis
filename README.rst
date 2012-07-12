@@ -5,13 +5,12 @@ Plodis
 Redis functions using a PDO backend.  Intended for prototyping where you
 dont have a Redis server available or deployment to hosted servers where unable to install Redis.
 
-Even if you are not planning on using Redis in production, the functions provided make it trivial to
+Even if you are not planning on using Redis in production, the redis API makes it trivial to
 implement queues (IPC, background processing etc) and pub/sub (webchat anyone?) so it stands alone as
 a package quite happily.
 
 In theory you should be able to take an application running Plodis and change to Predis with only
-one or two changes - will update when I know for sure...
-
+one or two changes - will update when I've tested...
 
 Current Status
 ==============
@@ -20,17 +19,17 @@ Built against Redis 2.6.0 with certain modules disabled and a few gaps:
 :Generic (Keys):
    Partial coverage. Need to finish 2.0.0.
 :Strings:
-   Full coverage up to 2.0.0. Methods from 2.6.0 present as stubs.
+   Full coverage up to 2.0.0 except APPEND. Methods from 2.6.0 present as stubs.
 :Hashes:
    Not implemented.
 :List:
-   Full coverage up to 2.0.0, plus LINSERT.
+   Full coverage up to 2.0.0 plus LINSERT.
 :Sets:
    Not implemented.
 :Sorted Sets:
    Not implemented.
 :Pub/Sub:
-   Full coverage except PSUBSCRIBE and PUNSUBSCRIBE
+   Full 2.6.0 coverage except PSUBSCRIBE and PUNSUBSCRIBE
 :Transaction:
    Background implementation.
 :Scripting:
@@ -59,6 +58,16 @@ Caveats
 :Pub / Sub:
    this is implemented as mailbox fanout using the Lists module - should be fine for everyday work but dont try and build a **twitter** with
    it.  Might look at reference fanout in the future: http://www.scribd.com/doc/16952419/Building-scalable-complex-apps-on-App-Engine
+
+TODO
+====
+
+* Finish current modules
+* Finish preprocessor directives so we can compile for a specific version
+* Make sure the test suite is complete (return types?)
+* Move behavior switches from classes to CONFIG GET
+* Implement other modules
+* Figure out why I spent two days cloning something that was already excellent :-)
    
 Performance
 ===========

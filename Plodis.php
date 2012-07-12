@@ -7,11 +7,10 @@
 require_once "Plodis/Proxy.php";
 
 /**
- * Proxy for Redis methods.  Dispatches calls to the group class
+ * Proxy for Redis version 2.6.0 methods.  Dispatches calls to the group class
  * This class is automatically generated from the Redis docs on github.
  *
- * Included groups: generic, string, list, pubsub
- * Version emulation: 2.6.0
+ * Included modules: generic, string, list, pubsub
  *
  * @link https://github.com/antirez/redis-doc
  * @package Plodis

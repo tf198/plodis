@@ -1,6 +1,6 @@
 <?php
 /**
- * Stub functions for Redis group string
+ * Redis string methods for version 2.6.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *

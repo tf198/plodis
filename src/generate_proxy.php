@@ -23,11 +23,10 @@ echo <<< EOF
 require_once "Plodis/Proxy.php";
 
 /**
- * Proxy for Redis methods.  Dispatches calls to the group class
+ * Proxy for Redis version {$version} methods.  Dispatches calls to the group class
  * This class is automatically generated from the Redis docs on github.
  *
- * Included groups: {$inclusions}
- * Version emulation: {$version}
+ * Included modules: {$inclusions}
  *
  * @link https://github.com/antirez/redis-doc
  * @package Plodis

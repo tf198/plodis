@@ -14,7 +14,7 @@ $name = "Redis_" . ucfirst($group) . "_{$safe_version}";
 echo <<< EOF
 <?php
 /**
- * Stub functions for Redis group {$group}
+ * Redis {$group} methods for version {$version}
  * This interface is automatically generated from the Redis docs on github.
  *
  *

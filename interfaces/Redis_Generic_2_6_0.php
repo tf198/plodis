@@ -1,6 +1,6 @@
 <?php
 /**
- * Stub functions for Redis group generic
+ * Redis generic methods for version 2.6.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *

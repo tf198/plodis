@@ -1,6 +1,8 @@
 <?php
 require_once "Plodis/Group.php";
 
+define('PLODIS_BASE', dirname(dirname(__FILE__)));
+
 class Plodis_Proxy {
 	
 	/**
@@ -123,12 +125,12 @@ class Plodis_Proxy {
 		}
 	}
 	
-	public function defineCommand($cmd, $klass) {
-		
-	}
-	
 	static function strict() {
 		Plodis_String::$return_values = true;
 		Plodis_List::$return_counts = true;
 	}
 }
+
+class PlodisError extends RuntimeException {}
+
+class PlodisNotImplementedError extends PlodisError {}

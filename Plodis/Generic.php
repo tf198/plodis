@@ -1,5 +1,7 @@
 <?php
-class Plodis_Generic extends Plodis_Group {
+require_once PLODIS_BASE . "/interfaces/Redis_Generic_2_6_0.php";
+
+class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	
 	/**
 	 * How often in seconds to purge expired items
@@ -97,5 +99,46 @@ class Plodis_Generic extends Plodis_Group {
 		// set a new alarm
 		$result = $this->fetchOne('alarm');
 		$this->alarm = ($result[0]) ? $result[0] : $now + self::$purge_frequency;
+	}
+	
+	function dump($key) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function migrate($host, $port, $key, $destination_db, $timeout) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function move($key, $db) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function object($subcommand, $arguments=null) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function randomkey() {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function rename($key, $newkey) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function renamenx($key, $newkey) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function restore($key, $ttl, $serialized_value) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function sort($key, $by=null, $limit=null, $get=null, $order=null, $sorting=null, $store=null) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	
+	function type($key) {
+		throw new PlodisNotImplementedError;
 	}
 }

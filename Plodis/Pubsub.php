@@ -1,5 +1,7 @@
 <?php
-class Plodis_Pubsub extends Plodis_Group {
+require_once PLODIS_BASE . "/interfaces/Redis_Pubsub_2_6_0.php";
+
+class Plodis_Pubsub extends Plodis_Group implements Redis_Pubsub_2_6_0 {
 	
 	const CHANNEL_PREFIX = '_channel_';
 	

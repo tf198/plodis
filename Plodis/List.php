@@ -1,5 +1,7 @@
 <?php
-class Plodis_List extends Plodis_Group {
+require_once PLODIS_BASE . "/interfaces/Redis_List_2_6_0.php";
+
+class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	/**
 	 * How often in seconds to poll for blocking operations
@@ -205,5 +207,17 @@ class Plodis_List extends Plodis_Group {
 		}
 	
 		return ($result) ? $result[1] : null;
+	}
+	
+	function brpoplpush($source, $dest, $timeout) {
+		throw new PlodisNotImplementedError();
+	}
+	
+	function lpushx($key, $value) {
+		throw new PlodisNotImplementedError();
+	}
+	
+	function rpushx($key, $value) {
+		throw new PlodisNotImplementedError();
 	}
 }

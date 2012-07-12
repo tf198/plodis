@@ -1,5 +1,7 @@
 <?php
-class Plodis_String extends Plodis_Group {
+require_once PLODIS_BASE . "/interfaces/Redis_String_2_6_0.php";
+
+class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	
 	/**
 	 * Whether to return incr/decr results
@@ -93,4 +95,55 @@ class Plodis_String extends Plodis_Group {
 		return $this->incrby($key, -$decrement);
 	}
 	
+	function append($key, $value) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function bitcount($key, $start=null, $end=null) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function bitop($operation, $destkey, $key) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function getbit($key, $offset) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function getrange($key, $start, $end) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function getset($key, $value) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function incrbyfloat($key, $increment) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function msetnx($keys) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function psetex($key, $milliseconds, $value) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function setbit($key, $offset, $value) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function setnx($key, $value) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function setrange($key, $offset, $value) {
+		throw new PlodisNotImplementedError;
+	}
+	
+	function strlen($key) {
+		throw new PlodisNotImplementedError;
+	}
 }

@@ -1,6 +1,13 @@
-REDIS_INTERFACES=1_0_0 1_2_0 2_0_0
+REDIS_VERSION=2_6_0
 
-interfaces: $(addprefix src/Redis_,$(addsuffix .php,$(REDIS_INTERFACES)))
+REDIS_GROUPS=Generic String List Pubsub
 
-src/Redis_%.php: src/generate_stubs.php src/redis-doc
-	php $< $* > $@
+GROUP_INTERFACES=$(addprefix interfaces/Redis_,$(addsuffix _$(REDIS_VERSION).php,$(REDIS_GROUPS)))
+
+all: $(GROUP_INTERFACES) Plodis.php
+	
+interfaces/Redis_%_$(REDIS_VERSION).php: src/generate_interface.php src/redis-doc
+	php $< $(REDIS_VERSION) $* > $@
+	
+Plodis.php: src/generate_proxy.php src/redis-doc
+	php $< $(REDIS_VERSION) $(REDIS_GROUPS) > $@

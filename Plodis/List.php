@@ -7,6 +7,12 @@ class Plodis_List extends Plodis_Group {
 	 */
 	public static $poll_frequency = 0.1;
 	
+	/**
+	 * Whether to return counts
+	 * @var boolean
+	 */
+	public static $return_counts = false;
+	
 	protected $sql = array(
 		'lpush_index'	=> 'SELECT MIN(list_index) from plodis',
 		'llen' 			=> 'SELECT COUNT(id) FROM plodis WHERE key=?',
@@ -105,9 +111,7 @@ class Plodis_List extends Plodis_Group {
 	
 		$this->proxy->conn->commit();
 	
-		if(self::$strict) {
-			return $this->llen($key);
-		}
+		return self::$return_counts ? $this->llen($key) : -1;
 	}
 	
 	function lrem($key, $count, $value) {
@@ -129,14 +133,14 @@ class Plodis_List extends Plodis_Group {
 			$stmt->execute(array($key, $value, 0));
 		}
 	
-		return $this->llen($key);
+		return self::$return_counts ? $this->llen($key) : -1;
 	}
 	
 	function lpush($key, $values) {
 		if(!is_array($values)) $values = array_slice(func_get_args(), 1);
 	
 		// have to transaction this
-		$this->proxy->conn->beginTransaction();
+		$this->proxy->lock();
 	
 		// find the lowest id
 		$id = $this->fetchOne('lpush_index');
@@ -147,9 +151,9 @@ class Plodis_List extends Plodis_Group {
 			$stmt->execute(array($key, $value, $id--));
 		}
 	
-		$this->proxy->conn->commit();
+		$this->proxy->unlock();
 	
-		return $this->llen($key);
+		return self::$return_counts ? $this->llen($key) : -1;
 	}
 	
 	function rpoplpush($source, $destination) {
@@ -180,7 +184,7 @@ class Plodis_List extends Plodis_Group {
 		$us = self::$poll_frequency * 1000000;
 	
 		while(true) {
-			$this->proxy->conn->beginTransaction();
+			$this->proxy->lock();
 			$pop->execute(array($key, 1, 0));
 			$result = $pop->fetch(PDO::FETCH_NUM);
 			$pop->closeCursor();
@@ -188,11 +192,11 @@ class Plodis_List extends Plodis_Group {
 				try {
 					$del->execute(array($result[0]));
 				} catch(PDOException $e) {
-					var_dump($e->getMessage());
+					$this->proxy->log("Unable to remove list item: " . $e->getMessage(), LOG_WARNING);
 					$result = null;
 				}
 			}
-			$this->proxy->conn->commit();
+			$this->proxy->unlock();
 			if(!$result && $wait) {
 				usleep($us);
 			} else {

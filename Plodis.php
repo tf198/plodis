@@ -10,7 +10,7 @@ require_once "Plodis/Proxy.php";
  * Proxy for Redis methods.  Dispatches calls to the group class
  * This class is automatically generated from the Redis docs on github.
  *
- * Excludes methods in groups: server, connection, scripting, transactions, set, sorted_set, hash
+ * Included groups: generic, string, list, pubsub
  * Version emulation: 2.6.0
  *
  * @link https://github.com/antirez/redis-doc
@@ -39,7 +39,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function append($key, $value) {
-        return $this->plodis_string->append($key, $value);
+        return $this->string->append($key, $value);
     }
 
     /**
@@ -56,7 +56,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function bitcount($key, $start=null, $end=null) {
-        return $this->plodis_string->bitcount($key, $start, $end);
+        return $this->string->bitcount($key, $start, $end);
     }
 
     /**
@@ -74,7 +74,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function bitop($operation, $destkey, $key) {
         if(!is_array($key)) $key = array_slice(func_get_args(), 2);
-        return $this->plodis_string->bitop($operation, $destkey, $key);
+        return $this->string->bitop($operation, $destkey, $key);
     }
 
     /**
@@ -90,7 +90,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function blpop($key, $timeout) {
-        return $this->plodis_list->blpop($key, $timeout);
+        return $this->list->blpop($key, $timeout);
     }
 
     /**
@@ -106,7 +106,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function brpop($key, $timeout) {
-        return $this->plodis_list->brpop($key, $timeout);
+        return $this->list->brpop($key, $timeout);
     }
 
     /**
@@ -123,7 +123,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function brpoplpush($source, $destination, $timeout) {
-        return $this->plodis_list->brpoplpush($source, $destination, $timeout);
+        return $this->list->brpoplpush($source, $destination, $timeout);
     }
 
     /**
@@ -138,7 +138,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function decr($key) {
-        return $this->plodis_string->decr($key);
+        return $this->string->decr($key);
     }
 
     /**
@@ -154,7 +154,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function decrby($key, $decrement) {
-        return $this->plodis_string->decrby($key, $decrement);
+        return $this->string->decrby($key, $decrement);
     }
 
     /**
@@ -170,7 +170,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function del($key) {
         if(!is_array($key)) $key = array_slice(func_get_args(), 0);
-        return $this->plodis_generic->del($key);
+        return $this->generic->del($key);
     }
 
     /**
@@ -185,7 +185,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function dump($key) {
-        return $this->plodis_generic->dump($key);
+        return $this->generic->dump($key);
     }
 
     /**
@@ -200,7 +200,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function exists($key) {
-        return $this->plodis_generic->exists($key);
+        return $this->generic->exists($key);
     }
 
     /**
@@ -216,7 +216,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function expire($key, $seconds) {
-        return $this->plodis_generic->expire($key, $seconds);
+        return $this->generic->expire($key, $seconds);
     }
 
     /**
@@ -232,7 +232,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function expireat($key, $timestamp) {
-        return $this->plodis_generic->expireat($key, $timestamp);
+        return $this->generic->expireat($key, $timestamp);
     }
 
     /**
@@ -247,7 +247,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function get($key) {
-        return $this->plodis_string->get($key);
+        return $this->string->get($key);
     }
 
     /**
@@ -263,7 +263,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function getbit($key, $offset) {
-        return $this->plodis_string->getbit($key, $offset);
+        return $this->string->getbit($key, $offset);
     }
 
     /**
@@ -280,7 +280,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function getrange($key, $start, $end) {
-        return $this->plodis_string->getrange($key, $start, $end);
+        return $this->string->getrange($key, $start, $end);
     }
 
     /**
@@ -296,7 +296,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function getset($key, $value) {
-        return $this->plodis_string->getset($key, $value);
+        return $this->string->getset($key, $value);
     }
 
     /**
@@ -311,7 +311,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function incr($key) {
-        return $this->plodis_string->incr($key);
+        return $this->string->incr($key);
     }
 
     /**
@@ -327,7 +327,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function incrby($key, $increment) {
-        return $this->plodis_string->incrby($key, $increment);
+        return $this->string->incrby($key, $increment);
     }
 
     /**
@@ -343,7 +343,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function incrbyfloat($key, $increment) {
-        return $this->plodis_string->incrbyfloat($key, $increment);
+        return $this->string->incrbyfloat($key, $increment);
     }
 
     /**
@@ -358,7 +358,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function keys($pattern=null) {
-        return $this->plodis_generic->keys($pattern);
+        return $this->generic->keys($pattern);
     }
 
     /**
@@ -374,7 +374,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function lindex($key, $index) {
-        return $this->plodis_list->lindex($key, $index);
+        return $this->list->lindex($key, $index);
     }
 
     /**
@@ -392,7 +392,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function linsert($key, $where, $pivot, $value) {
-        return $this->plodis_list->linsert($key, $where, $pivot, $value);
+        return $this->list->linsert($key, $where, $pivot, $value);
     }
 
     /**
@@ -407,7 +407,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function llen($key) {
-        return $this->plodis_list->llen($key);
+        return $this->list->llen($key);
     }
 
     /**
@@ -422,7 +422,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function lpop($key) {
-        return $this->plodis_list->lpop($key);
+        return $this->list->lpop($key);
     }
 
     /**
@@ -439,7 +439,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function lpush($key, $value) {
         if(!is_array($value)) $value = array_slice(func_get_args(), 1);
-        return $this->plodis_list->lpush($key, $value);
+        return $this->list->lpush($key, $value);
     }
 
     /**
@@ -455,7 +455,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function lpushx($key, $value) {
-        return $this->plodis_list->lpushx($key, $value);
+        return $this->list->lpushx($key, $value);
     }
 
     /**
@@ -472,7 +472,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function lrange($key, $start, $stop) {
-        return $this->plodis_list->lrange($key, $start, $stop);
+        return $this->list->lrange($key, $start, $stop);
     }
 
     /**
@@ -489,7 +489,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function lrem($key, $count, $value) {
-        return $this->plodis_list->lrem($key, $count, $value);
+        return $this->list->lrem($key, $count, $value);
     }
 
     /**
@@ -506,7 +506,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function lset($key, $index, $value) {
-        return $this->plodis_list->lset($key, $index, $value);
+        return $this->list->lset($key, $index, $value);
     }
 
     /**
@@ -523,7 +523,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function ltrim($key, $start, $stop) {
-        return $this->plodis_list->ltrim($key, $start, $stop);
+        return $this->list->ltrim($key, $start, $stop);
     }
 
     /**
@@ -539,7 +539,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function mget($key) {
         if(!is_array($key)) $key = array_slice(func_get_args(), 0);
-        return $this->plodis_string->mget($key);
+        return $this->string->mget($key);
     }
 
     /**
@@ -558,7 +558,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function migrate($host, $port, $key, $destination_db, $timeout) {
-        return $this->plodis_generic->migrate($host, $port, $key, $destination_db, $timeout);
+        return $this->generic->migrate($host, $port, $key, $destination_db, $timeout);
     }
 
     /**
@@ -574,7 +574,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function move($key, $db) {
-        return $this->plodis_generic->move($key, $db);
+        return $this->generic->move($key, $db);
     }
 
     /**
@@ -590,7 +590,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function mset($keys) {
         if(!is_array($keys)) $keys = array_slice(func_get_args(), 0);
-        return $this->plodis_string->mset($keys);
+        return $this->string->mset($keys);
     }
 
     /**
@@ -606,7 +606,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function msetnx($keys) {
         if(!is_array($keys)) $keys = array_slice(func_get_args(), 0);
-        return $this->plodis_string->msetnx($keys);
+        return $this->string->msetnx($keys);
     }
 
     /**
@@ -623,7 +623,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function object($subcommand, $arguments=null) {
         if(!is_array($arguments)) $arguments = array_slice(func_get_args(), 1);
-        return $this->plodis_generic->object($subcommand, $arguments);
+        return $this->generic->object($subcommand, $arguments);
     }
 
     /**
@@ -638,7 +638,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function persist($key) {
-        return $this->plodis_generic->persist($key);
+        return $this->generic->persist($key);
     }
 
     /**
@@ -654,7 +654,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function pexpire($key, $milliseconds) {
-        return $this->plodis_generic->pexpire($key, $milliseconds);
+        return $this->generic->pexpire($key, $milliseconds);
     }
 
     /**
@@ -670,7 +670,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function pexpireat($key, $milliseconds_timestamp) {
-        return $this->plodis_generic->pexpireat($key, $milliseconds_timestamp);
+        return $this->generic->pexpireat($key, $milliseconds_timestamp);
     }
 
     /**
@@ -687,7 +687,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function psetex($key, $milliseconds, $value) {
-        return $this->plodis_string->psetex($key, $milliseconds, $value);
+        return $this->string->psetex($key, $milliseconds, $value);
     }
 
     /**
@@ -703,7 +703,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function psubscribe($patterns) {
         if(!is_array($patterns)) $patterns = array_slice(func_get_args(), 0);
-        return $this->plodis_pubsub->psubscribe($patterns);
+        return $this->pubsub->psubscribe($patterns);
     }
 
     /**
@@ -718,7 +718,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function pttl($key) {
-        return $this->plodis_generic->pttl($key);
+        return $this->generic->pttl($key);
     }
 
     /**
@@ -734,7 +734,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function publish($channel, $message) {
-        return $this->plodis_pubsub->publish($channel, $message);
+        return $this->pubsub->publish($channel, $message);
     }
 
     /**
@@ -750,7 +750,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function punsubscribe($pattern=null) {
         if(!is_array($pattern)) $pattern = array_slice(func_get_args(), 0);
-        return $this->plodis_pubsub->punsubscribe($pattern);
+        return $this->pubsub->punsubscribe($pattern);
     }
 
     /**
@@ -764,7 +764,7 @@ class Plodis extends Plodis_Proxy {
      * @return string the random key, or `null` when the database is empty.
      */
     public function randomkey() {
-        return $this->plodis_generic->randomkey();
+        return $this->generic->randomkey();
     }
 
     /**
@@ -780,7 +780,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function rename($key, $newkey) {
-        return $this->plodis_generic->rename($key, $newkey);
+        return $this->generic->rename($key, $newkey);
     }
 
     /**
@@ -796,7 +796,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function renamenx($key, $newkey) {
-        return $this->plodis_generic->renamenx($key, $newkey);
+        return $this->generic->renamenx($key, $newkey);
     }
 
     /**
@@ -813,7 +813,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function restore($key, $ttl, $serialized_value) {
-        return $this->plodis_generic->restore($key, $ttl, $serialized_value);
+        return $this->generic->restore($key, $ttl, $serialized_value);
     }
 
     /**
@@ -828,7 +828,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function rpop($key) {
-        return $this->plodis_list->rpop($key);
+        return $this->list->rpop($key);
     }
 
     /**
@@ -844,7 +844,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function rpoplpush($source, $destination) {
-        return $this->plodis_list->rpoplpush($source, $destination);
+        return $this->list->rpoplpush($source, $destination);
     }
 
     /**
@@ -861,7 +861,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function rpush($key, $value) {
         if(!is_array($value)) $value = array_slice(func_get_args(), 1);
-        return $this->plodis_list->rpush($key, $value);
+        return $this->list->rpush($key, $value);
     }
 
     /**
@@ -877,7 +877,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function rpushx($key, $value) {
-        return $this->plodis_list->rpushx($key, $value);
+        return $this->list->rpushx($key, $value);
     }
 
     /**
@@ -893,7 +893,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function set($key, $value) {
-        return $this->plodis_string->set($key, $value);
+        return $this->string->set($key, $value);
     }
 
     /**
@@ -910,7 +910,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function setbit($key, $offset, $value) {
-        return $this->plodis_string->setbit($key, $offset, $value);
+        return $this->string->setbit($key, $offset, $value);
     }
 
     /**
@@ -927,7 +927,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function setex($key, $seconds, $value) {
-        return $this->plodis_string->setex($key, $seconds, $value);
+        return $this->string->setex($key, $seconds, $value);
     }
 
     /**
@@ -943,7 +943,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function setnx($key, $value) {
-        return $this->plodis_string->setnx($key, $value);
+        return $this->string->setnx($key, $value);
     }
 
     /**
@@ -960,7 +960,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function setrange($key, $offset, $value) {
-        return $this->plodis_string->setrange($key, $offset, $value);
+        return $this->string->setrange($key, $offset, $value);
     }
 
     /**
@@ -981,7 +981,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function sort($key, $by=null, $limit=null, $get=null, $order=null, $sorting=null, $store=null) {
-        return $this->plodis_generic->sort($key, $by, $limit, $get, $order, $sorting, $store);
+        return $this->generic->sort($key, $by, $limit, $get, $order, $sorting, $store);
     }
 
     /**
@@ -996,7 +996,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function strlen($key) {
-        return $this->plodis_string->strlen($key);
+        return $this->string->strlen($key);
     }
 
     /**
@@ -1012,7 +1012,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function subscribe($channels) {
         if(!is_array($channels)) $channels = array_slice(func_get_args(), 0);
-        return $this->plodis_pubsub->subscribe($channels);
+        return $this->pubsub->subscribe($channels);
     }
 
     /**
@@ -1027,7 +1027,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function ttl($key) {
-        return $this->plodis_generic->ttl($key);
+        return $this->generic->ttl($key);
     }
 
     /**
@@ -1042,7 +1042,7 @@ class Plodis extends Plodis_Proxy {
      * @return null no documentation available
      */
     public function type($key) {
-        return $this->plodis_generic->type($key);
+        return $this->generic->type($key);
     }
 
     /**
@@ -1058,7 +1058,7 @@ class Plodis extends Plodis_Proxy {
      */
     public function unsubscribe($channel=null) {
         if(!is_array($channel)) $channel = array_slice(func_get_args(), 0);
-        return $this->plodis_pubsub->unsubscribe($channel);
+        return $this->pubsub->unsubscribe($channel);
     }
 
 }

@@ -23,7 +23,7 @@ class Plodis_Pubsub extends Plodis_Group {
 		if(!is_array($channels)) $channels = func_get_args();
 	
 		foreach($channels as $channel) {
-			$this->proxy->group_list->rpush(self::CHANNEL_PREFIX . $channel, $this->uid);
+			$this->proxy->list->rpush(self::CHANNEL_PREFIX . $channel, $this->uid);
 			//$this->publish($channel, "{$this->uid} joined channel {$channel}");
 		}
 	}
@@ -32,14 +32,14 @@ class Plodis_Pubsub extends Plodis_Group {
 		if(!is_array($channels)) $channels = func_get_args();
 	
 		foreach($channels as $channel) {
-			$this->proxy->group_list->lrem(self::CHANNEL_PREFIX . $channel, 1, $this->uid);
+			$this->proxy->list->lrem(self::CHANNEL_PREFIX . $channel, 1, $this->uid);
 		}
 	}
 	
 	function publish($channel, $message) {
-		$subscribers = $this->proxy->group_list->lrange(self::CHANNEL_PREFIX . $channel, 0, -1);
+		$subscribers = $this->proxy->list->lrange(self::CHANNEL_PREFIX . $channel, 0, -1);
 		foreach($subscribers as $subscriber) {
-			$this->proxy->group_list->rpush(self::SUBSCRIBER_PREFIX . $subscriber, $message);
+			$this->proxy->list->rpush(self::SUBSCRIBER_PREFIX . $subscriber, $message);
 		}
 		//$this->debug();
 		return count($subscribers);
@@ -54,11 +54,11 @@ class Plodis_Pubsub extends Plodis_Group {
 	}
 	
 	function poll() {
-		return $this->proxy->group_list->lpop(self::SUBSCRIBER_PREFIX . $this->uid);
+		return $this->proxy->list->lpop(self::SUBSCRIBER_PREFIX . $this->uid);
 	}
 	
 	function bpoll() {
-		return $this->proxy->group_list->blpop(self::SUBSCRIBER_PREFIX . $this->uid);
+		return $this->proxy->list->blpop(self::SUBSCRIBER_PREFIX . $this->uid);
 	}
 	
 }

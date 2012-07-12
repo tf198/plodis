@@ -28,7 +28,7 @@ class Plodis_Generic extends Plodis_Group {
 	}
 	
 	function exists($key) {
-		return ($this->proxy->group_string->get($key) == null) ? 0 : 1;
+		return ($this->proxy->string->get($key) == null) ? 0 : 1;
 	}
 	
 	function keys($pattern=null) {
@@ -91,7 +91,7 @@ class Plodis_Generic extends Plodis_Group {
 		$now = microtime(true);
 		if($now < $this->alarm && $force == false) return;
 		
-		fputs(STDERR, "GC\n");
+		//fputs(STDERR, "GC\n");
 		$this->executeStmt('expire', array($now));
 		
 		// set a new alarm

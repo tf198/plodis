@@ -1,49 +1,37 @@
 <?php
-require_once 'Plodis.php';
+require_once 'BaseTest.php';
 
-class ListTest extends PHPUnit_Framework_TestCase {
-	
-	/**
-	 * Plodis object
-	 * @var Plodis
-	 */
-	public $db;
-	
-	function setUp() {
-		$this->db = new Plodis(new PDO('sqlite::memory:'));
-		// add some data so we are not fresh
-		$this->db->mset(array('a' => 'a', 'b' => 'b'));
-	}
+class ListTest extends BaseTest {
 	
 	function testRPush() {
-		$this->assertSame(1, $this->db->rpush('test1', 'one'));
-		$this->assertSame(2, $this->db->rpush('test1', 'two'));
+		$this->assertSame(-1, $this->db->rpush('test1', 'one'));
+		$this->assertSame(-1, $this->db->rpush('test1', 'two'));
 		
 		// multi insert
-		$this->assertSame(4, $this->db->rpush('test1', 'three', 'four'));
+		$this->assertSame(-1, $this->db->rpush('test1', 'three', 'four'));
 		
 		// strict behavior
-		//Plodis::$strict = true;
+		Plodis_List::$return_counts = true;
 		$this->assertSame(5, $this->db->rpush('test1', 'five'));
 		$this->assertSame(7, $this->db->rpush('test1', 'six', 'seven'));
-		//Plodis::$strict = false;
+		Plodis_List::$return_counts = false;
 		
 		// check result
 		$this->assertSame(array('one', 'two', 'three', 'four', 'five', 'six', 'seven'), $this->db->lrange('test1', 0, -1));
 	}
 	
 	function testLPush() {
-		$this->assertSame(1, $this->db->lpush('test1', 'one'));
-		$this->assertSame(2, $this->db->lpush('test1', 'two'));
+		$this->assertSame(-1, $this->db->lpush('test1', 'one'));
+		$this->assertSame(-1, $this->db->lpush('test1', 'two'));
 		
 		// multi insert
-		$this->assertSame(4, $this->db->lpush('test1', 'three', 'four'));
+		$this->assertSame(-1, $this->db->lpush('test1', 'three', 'four'));
 		
 		// strict behavior
-		//Plodis::$strict = true;
+		Plodis_List::$return_counts = true;
 		$this->assertSame(5, $this->db->lpush('test1', 'five'));
 		$this->assertSame(7, $this->db->lpush('test1', 'six', 'seven'));
-		//Plodis::$strict = false;
+		Plodis_List::$return_counts = false;
 		
 		// check result
 		$this->assertSame(array('seven', 'six', 'five', 'four', 'three', 'two', 'one'), $this->db->lrange('test1', 0, -1));

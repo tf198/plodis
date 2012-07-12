@@ -1,11 +1,18 @@
 <?php
 class Plodis_String extends Plodis_Group {
 	
+	/**
+	 * Whether to return incr/decr results
+	 * @var boolean
+	 */
+	public static $return_values = false;
+	
 	protected $sql = array(
-		'select_key' 	=> 'SELECT item, expiry FROM plodis WHERE key=?',
+		'select_key' 	=> 'SELECT item, list_index FROM plodis WHERE key=?',
 		'insert_key' 	=> 'INSERT INTO plodis (key, item, expiry) VALUES (?, ?, ?)',
 		'update_key'	=> 'UPDATE plodis SET item=?, expiry=? WHERE key=?',
 		'delete_key'	=> 'DELETE FROM plodis WHERE key=?',
+		'incrby' 		=> 'UPDATE plodis SET item=item + ? WHERE key=?',
 	);
 	
 	private $_get;
@@ -38,19 +45,52 @@ class Plodis_String extends Plodis_Group {
 		}
 	}
 	
-	function get($key) {
-		$this->proxy->group_generic->gc();
+	function get($key, $_value=null, $_throw=true) {
+		$this->proxy->generic->gc();
 		
 		$row = $this->fetchOne('select_key', array($key));
 		
 		if(!$row) {
 			return null;
 		}
+		if($row[1] !== null && $_throw) throw new RuntimeException('Operation against a key holding the wrong kind of value');
 		return $row[0];
 	}
 	
 	function mget($keys) {
-		return array_map(array($this, 'get'), $keys);
+		foreach($keys as &$key) {
+			try {
+				$key = $this->get($key);
+			} catch(RuntimeException $e) {
+				$key = null;
+			}
+		}
+		return $keys;
+	}
+	
+	function incr($key) {
+		return $this->incrby($key, 1);
+	}
+	
+	function incrby($key, $increment) {
+		$c = $this->executeStmt('incrby', array($increment, $key));
+		
+		// check for list/hash
+		if($c > 1) throw new RuntimeException('Operation against a key holding the wrong kind of value');
+		
+		if($c == 0) {
+			$this->set($key, $increment);
+		}
+		
+		if(self::$return_values) return (int)$this->get($key);
+	}
+	
+	function decr($key) {
+		return $this->incrby($key, -1);
+	}
+	
+	function decrby($key, $decrement) {
+		return $this->incrby($key, -$decrement);
 	}
 	
 }

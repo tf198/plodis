@@ -31,11 +31,11 @@ class Plodis_Proxy {
 		'PRAGMA synchronous = OFF',
 	);
 	
-	private $group_cache = array();
-	
 	private $stmt_cache = array();
 	
-	private $alarm = 0;
+	private static $log_level = LOG_INFO;
+	
+	private $lock_count;
 	
 	/**
 	 * @param PDO $pdo
@@ -61,7 +61,7 @@ class Plodis_Proxy {
 		}
 		
 		// expire old items
-		$this->group_generic->gc();
+		$this->generic->gc();
 	}
 	
 	function cachedStmt($sql) {
@@ -77,32 +77,58 @@ class Plodis_Proxy {
 	 * @param string $name
 	 */
 	function __get($name) {
-		$parts = explode('_', $name);	
-		$this->$name = $this->group($parts[1]);
-// 		/fputs(STDERR, "LOADED {$name}\n");
+		return $this->load($name);
+	}
+	
+	function load($name, $klass=null) {
+		if(isset($this->$name)) return $this->$name;
+		
+		if($klass === null) {
+			$title = ucfirst($name);
+			$klass = "Plodis_{$title}";
+			$file = "Plodis/{$title}.php";
+			if(!is_readable($file)) throw new RuntimeException("Unknown module: {$name}");
+			require_once $file;
+		}
+		
+		$this->$name = new $klass($this);
+		
 		return $this->$name;
 	}
 	
-	/**
-	 * Factory for group objects
-	 * @param string $name
-	 */
-	private function group($name) {
-		if(!isset($this->group_cache[$name])) {
-			$title = ucfirst($name);
-			$klass = "Plodis_{$title}";
-			require_once "Plodis/{$title}.php";
-			$this->group_cache[$name] = new $klass($this);
+	public function lock() {
+		if($this->lock_count == 0) {
+			$this->conn->beginTransaction();
+			$this->rollback = false;
+		}
+		$this->lock_count++;
+	}
+	
+	public function unlock($rollback=false) {
+		$this->lock_count--;
+		
+		if($rollback) {
+			$this->conn->rollBack();
+			throw new RuntimeException("Multi transaction rollback - unpredictable results possible");
 		}
 		
-		return $this->group_cache[$name];
+		if($this->lock_count == 0) {
+			$this->conn->commit();
+		}
 	}
 	
-	public function setAlarm($alarm) {
-		$this->alarm = $alarm;
+	public function log($message, $level=LOG_INFO) {
+		if($level <= self::$log_level) {
+			fputs(STDERR, $message . "\n");
+		}
 	}
 	
-	public function checkAlarm() {
-		return (microtime(true) > $this->alarm);
+	public function defineCommand($cmd, $klass) {
+		
+	}
+	
+	static function strict() {
+		Plodis_String::$return_values = true;
+		Plodis_List::$return_counts = true;
 	}
 }

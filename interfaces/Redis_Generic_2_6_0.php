@@ -81,7 +81,7 @@ interface Redis_Generic_2_6_0 {
      * @link http://redis.io/commands/expireat EXPIREAT
      *
      * @param string $key
-     * @param posix time $timestamp
+     * @param integer $timestamp
      * @return null no documentation available
      */
     public function expireat($key, $timestamp);
@@ -180,7 +180,7 @@ interface Redis_Generic_2_6_0 {
      * @link http://redis.io/commands/pexpireat PEXPIREAT
      *
      * @param string $key
-     * @param posix time $milliseconds_timestamp
+     * @param integer $milliseconds_timestamp
      * @return null no documentation available
      */
     public function pexpireat($key, $milliseconds_timestamp);

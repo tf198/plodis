@@ -48,6 +48,7 @@ function redis_command_info($key, $command) {
 	$type_map = array(
 		'key' => 'string',
 		'pattern' => 'string',
+		'posix time' => 'integer',
 	);
 	
 	$func = str_replace(' ', '_', strtolower($key));

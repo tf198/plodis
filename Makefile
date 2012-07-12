@@ -6,8 +6,8 @@ GROUP_INTERFACES=$(addprefix interfaces/Redis_,$(addsuffix _$(REDIS_VERSION).php
 
 all: $(GROUP_INTERFACES) Plodis.php
 	
-interfaces/Redis_%_$(REDIS_VERSION).php: src/generate_interface.php src/redis-doc
+interfaces/Redis_%_$(REDIS_VERSION).php: src/generate_interface.php src/generate_common.php src/redis-doc
 	php $< $(REDIS_VERSION) $* > $@
 	
-Plodis.php: src/generate_proxy.php src/redis-doc
+Plodis.php: src/generate_proxy.php src/generate_common.php src/redis-doc
 	php $< $(REDIS_VERSION) $(REDIS_GROUPS) > $@

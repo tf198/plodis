@@ -83,19 +83,18 @@ class ListTest extends BaseTest {
 	}
 	
 	function testLInsert() {
-		$this->markTestSkipped();
 		$this->db->rpush('test1', 'one', 'two', 'three', 'four');
 		
-		$this->assertSame(null, $this->db->linsert('test1', 'before', 'two', 'five'));
+		$this->assertSame(-1, $this->db->linsert('test1', 'before', 'two', 'five'));
 		$this->assertSame(array('one', 'five', 'two', 'three', 'four'), $this->db->lrange('test1', 0, -1));
 		
-		$this->assertSame(null, $this->db->linsert('test1', 'after', 'three', 'six'));
+		$this->assertSame(-1, $this->db->linsert('test1', 'after', 'three', 'six'));
 		$this->assertSame(array('one', 'five', 'two', 'three', 'six', 'four'), $this->db->lrange('test1', 0, -1));
 		
-		$this->assertSame(null, $this->db->linsert('test1', 'before', 'one', 'seven'));
+		$this->assertSame(-1, $this->db->linsert('test1', 'before', 'one', 'seven'));
 		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'six', 'four'), $this->db->lrange('test1', 0, -1));
 		
-		$this->assertSame(null, $this->db->linsert('test1', 'after', 'six', 'eight'));
+		$this->assertSame(-1, $this->db->linsert('test1', 'after', 'six', 'eight'));
 		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'six', 'eight', 'four'), $this->db->lrange('test1', 0, -1));
 	}
 	

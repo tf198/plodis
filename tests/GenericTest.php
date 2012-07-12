@@ -59,7 +59,7 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testPersist() {
-		$this->markTestSkipped();
+		if(strcmp(Plodis::REDIS_VERSION, '2.6.0') < 0)  $this->markTestSkipped();
 		$this->db->setex('test1', 1, 13);
 		
 		$this->assertSame(13, $this->db->ttl('test1'));
@@ -87,7 +87,7 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testPTTL() {
-		$this->markTestSkipped();
+		if(strcmp(Plodis::REDIS_VERSION, '2.6.0') < 0)  $this->markTestSkipped();
 		// unset
 		$this->assertSame(-1, $this->db->pttl('test1'));
 		
@@ -105,7 +105,7 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testPExpire() {
-		$this->markTestSkipped();
+		if(strcmp(Plodis::REDIS_VERSION, '2.6.0') < 0)  $this->markTestSkipped();
 		$this->db->set('test1', 1);
 		
 		// normal usage

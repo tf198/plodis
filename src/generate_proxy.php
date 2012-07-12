@@ -48,11 +48,6 @@ EOF;
 foreach($data as $key=>$command) {
 	if(strcmp($command['since'], $version) > 0) continue;
 	if(array_search($command['group'], $include_groups) === false) continue;
-
-	// couple of fixes
-	if($key == 'KEYS') {
-		$command['arguments'][0]['optional'] = 'true';
-	}
 	
 	$info = redis_command_info($key, $command);
 	

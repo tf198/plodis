@@ -97,7 +97,7 @@ interface Redis_Generic_2_6_0 {
      * @param string $pattern
      * @return null no documentation available
      */
-    public function keys($pattern);
+    public function keys($pattern=null);
 
     /**
      * Atomically transfer a key from a Redis instance to another one.

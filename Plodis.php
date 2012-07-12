@@ -1,4 +1,5 @@
 <?php
+require_once 'src/Redis_2_0_0.php';
 
 /**
  * A Redis-type datastore using SQLite.
@@ -8,7 +9,7 @@
  *
  * @see http://flask.pocoo.org/snippets/88/
  */
-class Plodis {
+class Plodis implements Redis_2_0_0 {
 	
 	const CHANNEL_PREFIX = '_channel_';
 	const SUBSCRIBER_PREFIX = '_subscriber_';
@@ -93,8 +94,9 @@ class Plodis {
 		'l_forward'		=> 'SELECT id, item FROM plodis WHERE key=? ORDER BY list_index, id LIMIT ? OFFSET ?',
 		'l_reverse'		=> 'SELECT id, item FROM plodis WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ? OFFSET ?',
 		'l_insert' 		=> 'INSERT INTO plodis (key, item, list_index) VALUES (?, ?, ?)',
+		'lset'			=> 'UPDATE plodis SET item=? WHERE id=?',
 		'l_key_val'		=> 'SELECT id, list_index FROM plodis WHERE key=? AND item=?',
-		'l_shift'		=> 'UPDATE plodis set list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
+		'l_shift'		=> 'UPDATE plodis SET list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
 		'lrem_forward'	=> 'DELETE FROM plodis WHERE id IN (SELECT id FROM plodis WHERE key=? AND item=? ORDER BY list_index, id LIMIT ?)',
 		'lrem_reverse'	=> 'DELETE FROM plodis WHERE id IN (SELECT id FROM plodis WHERE key=? AND item=? ORDER BY list_index DESC, id DESC LIMIT ?)',
 		'list_del' 		=> 'DELETE FROM plodis WHERE id=?',
@@ -201,7 +203,33 @@ class Plodis {
 		}
 	}
 	
-	/*** STORE METHODS ***/
+	/*** GENERIC METHODS ***/
+	
+	function move($key, $db) {
+		throw new RuntimeException("Not implemented");
+	}
+	
+	function randomkey() {
+		throw new RuntimeException("Not implemented");
+	}
+	
+	function rename($key, $newkey) {
+		throw new RuntimeException("Not implemented");
+	}
+	
+	function renamenx($key, $newkey) {
+		throw new RuntimeException("Not implemented");
+	}
+	
+	function sort($key, $by=null, $limit=null, $get=null, $order=null, $sorting=null, $store=null) {
+		throw new RuntimeException("Not implemented");
+	}
+	
+	function type($key) {
+		throw new RuntimeException("Not implemented");
+	}
+	
+	/*** STRING METHODS ***/
 	
 	function get($key) {
 		if(microtime(true) > $this->alarm) {
@@ -216,6 +244,17 @@ class Plodis {
 	
 	function set($key, $value) {
 		return $this->setex($key, $value, null);
+	}
+	
+	function setnx($key, $value) {
+		throw new RuntimeException("Not implemented");
+	}
+	
+	function getset($key, $value) {
+		$this->conn->beginTransaction();
+		$current = $this->get($key);
+		$this->set($key, $value);
+		return $current;
 	}
 	
 	function setex($key, $value, $seconds) {
@@ -277,6 +316,12 @@ class Plodis {
 	function mset($pairs) {
 		foreach($pairs as $key=>$value) {
 			$this->set($key, $value);
+		}
+	}
+	
+	function msetnx($keys) {
+		foreach($keys as $key=>$value) {
+			$this->setnx($key, $value);
 		}
 	}
 	
@@ -353,13 +398,30 @@ class Plodis {
 	}
 	
 	function lindex($key, $index) {
+		$row = $this->_lindex($key, $index);
+		return ($row) ? $row[1] : null;
+	}
+	
+	function lset($key, $index, $value) {
+		$row = $this->_lindex($key, $index);
+		if(!$row) throw new RuntimeException("Index out of range: {$index}");
+		
+		$c = $this->executeStatement('lset', array($value, $row[0]));
+		if ($c != 1) throw new RuntimeException("Failed to update list value");
+	}
+	
+	private function _lindex($key, $index) {
 		$s = 'l_forward';
 		if($index < 0) {
 			$s = 'l_reverse';
 			$index = -$index - 1;
 		}
 		$row = $this->executeQuery($s, array($key, 1, $index));
-		return $row[1];
+		return $row;
+	}
+	
+	function ltrim($key, $start, $stop) {
+		throw new RuntimeException('Not implemented');
 	}
 	
 	function lrange($key, $start, $stop) {
@@ -465,6 +527,10 @@ class Plodis {
 		}
 	}
 	
+	function rpoplpush($source, $destination) {
+		throw new RuntimeException('Not implemented');
+	}
+	
 	function lpop($key) {
 		return $this->_pop($key, 'l_forward');
 	}
@@ -473,11 +539,11 @@ class Plodis {
 		return $this->_pop($key, 'l_reverse');
 	}
 	
-	function blpop($key) {
+	function blpop($key, $timeout) {
 		return $this->_pop($key, 'l_forward', true);
 	}
 	
-	function brpop($key) {
+	function brpop($key, $timeout) {
 		return $this->_pop($key, 'l_reverse', true);
 	}
 	
@@ -530,7 +596,7 @@ class Plodis {
 		}
 	}
 	
-	function unsubscribe($channels) {
+	function unsubscribe($channels=array()) {
 		if(!is_array($channels)) $channels = func_get_args();
 		
 		foreach($channels as $channel) {
@@ -545,6 +611,14 @@ class Plodis {
 		}
 		//$this->debug();
 		return count($subscribers);
+	}
+	
+	function psubscribe($patterns) {
+		throw new RuntimeException('Not implemented');
+	}
+	
+	function punsubscribe($pattern=null) {
+		throw new RuntimeException('Not implemented');
 	}
 	
 	function poll() {

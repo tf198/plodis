@@ -3,7 +3,7 @@ define('REDIS_DOC', dirname(__FILE__) . '/redis-doc/');
 $safe_version = $argv[1];
 
 $exclude_groups = array(
-	'server', 'connection',
+	'server', 'connection', 'scripting', 'transactions',
 	'set', 'sorted_set', 'hash',
 );
 
@@ -91,7 +91,7 @@ foreach($data as $key=>$command) {
 
 	echo <<< EOF
     {$doc}
-  	public abstract function {$func}({$args});
+  	public function {$func}({$args});
 
 
 EOF;
@@ -104,7 +104,7 @@ echo "}\n";
 function get_return($key) {
 
 	$type_map = array(
-		'@status-reply' => 'boolean',
+		'@status-reply' => 'null',
 		'@integer-reply,' => 'integer',
 		'@integer-reply' => 'integer',
 		'@multi-bulk-reply' => 'multitype:string',
@@ -116,6 +116,7 @@ function get_return($key) {
 
 	$override = array(
 		'INFO' => 'multitype:string key/value pairs',
+		'TYPE' => 'string type of `key`, or `none` when `key` does not exist.'
 	);
 
 	if(isset($override[$key])) return $override[$key];

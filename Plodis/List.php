@@ -1,6 +1,10 @@
 <?php
 require_once PLODIS_BASE . "/interfaces/Redis_List_2_6_0.php";
 
+#define REDIS_1_0_0
+#define REDIS_1_2_0
+#define REDIS_2_0_0
+
 class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	/**
@@ -29,6 +33,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		'list_del' 		=> 'DELETE FROM plodis WHERE id=?',
 	);
 	
+	#ifdef REDIS_1_0_0
 	function llen($key) {
 		$row = $this->fetchOne('llen', array($key));
 		return (int) $row[0];
@@ -96,26 +101,6 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		return $data;
 	}
 	
-	function linsert($key, $pos, $pivot, $value) {
-		// make atomic
-		$this->proxy->conn->beginTransaction();
-	
-		$item = $this->fetchOne('l_key_val', array($key, $pivot));
-		if(!$item) {
-			$this->proxy->conn->commit();
-			return -1;
-		}
-	
-		if($pos == 'before') $item[0]--;
-	
-		$this->fetchOne('l_shift', $item);
-		$this->fetchOne('l_insert', array($key, $value, $item[1]));
-	
-		$this->proxy->conn->commit();
-	
-		return self::$return_counts ? $this->llen($key) : -1;
-	}
-	
 	function lrem($key, $count, $value) {
 		$s = 'lrem_forward';
 		if($count < 0) {
@@ -158,24 +143,12 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		return self::$return_counts ? $this->llen($key) : -1;
 	}
 	
-	function rpoplpush($source, $destination) {
-		throw new RuntimeException('Not implemented');
-	}
-	
 	function lpop($key) {
 		return $this->_pop($key, 'l_forward');
 	}
 	
 	function rpop($key) {
 		return $this->_pop($key, 'l_reverse');
-	}
-	
-	function blpop($key, $timeout) {
-		return $this->_pop($key, 'l_forward', true);
-	}
-	
-	function brpop($key, $timeout) {
-		return $this->_pop($key, 'l_reverse', true);
 	}
 	
 	private function _pop($key, $type, $wait=false) {
@@ -208,6 +181,44 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 		return ($result) ? $result[1] : null;
 	}
+	#endif
+	
+	#ifdef REDIS_1_2_0
+	function rpoplpush($source, $destination) {
+		throw new RuntimeException('Not implemented');
+	}
+	#endif
+	
+	#ifdef REDIS_2_0_0
+	function blpop($key, $timeout) {
+		return $this->_pop($key, 'l_forward', true);
+	}
+	
+	function brpop($key, $timeout) {
+		return $this->_pop($key, 'l_reverse', true);
+	}
+	#endif
+	
+	#ifdef REDIS_2_2_0
+	function linsert($key, $pos, $pivot, $value) {
+		// make atomic
+		$this->proxy->conn->beginTransaction();
+	
+		$item = $this->fetchOne('l_key_val', array($key, $pivot));
+		if(!$item) {
+			$this->proxy->conn->commit();
+			return -1;
+		}
+	
+		if($pos == 'before') $item[0]--;
+	
+		$this->fetchOne('l_shift', $item);
+		$this->fetchOne('l_insert', array($key, $value, $item[1]));
+	
+		$this->proxy->conn->commit();
+	
+		return self::$return_counts ? $this->llen($key) : -1;
+	}
 	
 	function brpoplpush($source, $dest, $timeout) {
 		throw new PlodisNotImplementedError();
@@ -220,4 +231,5 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	function rpushx($key, $value) {
 		throw new PlodisNotImplementedError();
 	}
+	#endif
 }

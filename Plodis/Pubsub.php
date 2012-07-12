@@ -48,11 +48,11 @@ class Plodis_Pubsub extends Plodis_Group implements Redis_Pubsub_2_6_0 {
 	}
 	
 	function psubscribe($patterns) {
-		throw new RuntimeException('Not implemented');
+		throw new PlodisNotImplementedError;
 	}
 	
 	function punsubscribe($pattern=null) {
-		throw new RuntimeException('Not implemented');
+		throw new PlodisNotImplementedError;
 	}
 	
 	function poll() {

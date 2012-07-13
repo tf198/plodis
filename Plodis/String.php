@@ -12,7 +12,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	protected $sql = array(
 		'select_key' 	=> 'SELECT item, list_index FROM <DB> WHERE key=?',
 		'insert_key' 	=> 'INSERT INTO <DB> (key, item, expiry) VALUES (?, ?, ?)',
-		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=? WHERE key=?',
+		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=?, list_index=NULL WHERE key=?',
 		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
 		'incrby' 		=> 'UPDATE <DB> SET item=item + ? WHERE key=?',
 	);
@@ -26,12 +26,12 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		if(is_array($value)) throw new RuntimeException("Cannot convert array to string");
 	
 		if($seconds) $seconds += time();
+		
+		// try for an update - most efficient
 		$count = $this->executeStmt('update_key', array($value, $seconds, $key));
+		if($count==1) return;
 	
-		if($count==1) {
-			return;
-		}
-	
+		// if an object or a hash we delete and recreate
 		if($count > 1) {
 			$this->del($key);
 		}

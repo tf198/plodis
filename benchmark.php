@@ -13,7 +13,7 @@ EOF
 		);
 
 define('BENCH_DATA', 'data/benchmark.sq3');
-define('LOOP_SIZE', 500);
+define('LOOP_SIZE', 1000);
 
 function bench($message, $count=1) {
 	$now = microtime(true);

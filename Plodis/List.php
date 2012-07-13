@@ -20,19 +20,19 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	public static $return_counts = false;
 	
 	protected $sql = array(
-		'lpush_index'	=> 'SELECT MIN(list_index) FROM <DB> WHERE key=?',
+		'lpush_index'	=> 'SELECT MIN(field) FROM <DB> WHERE key=?',
 		'llen' 			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
-		'l_forward'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY list_index, id LIMIT ? OFFSET ?',
-		'l_reverse'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ? OFFSET ?',
-		'l_insert' 		=> 'INSERT INTO <DB> (key, item, list_index) VALUES (?, ?, ?)',
+		'l_forward'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY field, id LIMIT ? OFFSET ?',
+		'l_reverse'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY field DESC, id DESC LIMIT ? OFFSET ?',
+		'l_insert' 		=> 'INSERT INTO <DB> (key, item, field) VALUES (?, ?, ?)',
 		'lset'			=> 'UPDATE <DB> SET item=? WHERE id=?',
-		'l_key_val'		=> 'SELECT id, list_index FROM <DB> WHERE key=? AND item=?',
-		'l_shift'		=> 'UPDATE <DB> SET list_index = list_index-1 WHERE key=? AND id<=? OR list_index<?', // creates a space before the target item
-		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY list_index, id LIMIT ?)',
-		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY list_index DESC, id DESC LIMIT ?)',
+		'l_key_val'		=> 'SELECT id, field FROM <DB> WHERE key=? AND item=?',
+		'l_shift'		=> 'UPDATE <DB> SET field = field-1 WHERE key=? AND id<=? OR field<?', // creates a space before the target item
+		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY field, id LIMIT ?)',
+		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY field DESC, id DESC LIMIT ?)',
 		'list_del' 		=> 'DELETE FROM <DB> WHERE id=?',
-		'ltrim_l'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY list_index, id LIMIT ?)',
-		'ltrim_r'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ?)'
+		'ltrim_l'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY field, id LIMIT ?)',
+		'ltrim_r'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY field DESC, id DESC LIMIT ?)'
 	);
 	
 	#ifdef REDIS_1_0_0

@@ -10,9 +10,9 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	public static $return_values = false;
 	
 	protected $sql = array(
-		'select_key' 	=> 'SELECT item, list_index FROM <DB> WHERE key=?',
+		'select_key' 	=> 'SELECT item, field FROM <DB> WHERE key=?',
 		'insert_key' 	=> 'INSERT INTO <DB> (key, item, expiry) VALUES (?, ?, ?)',
-		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=?, list_index=NULL WHERE key=?',
+		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=?, field=NULL WHERE key=?',
 		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
 		'incrby' 		=> 'UPDATE <DB> SET item=item + ? WHERE key=?',
 	);

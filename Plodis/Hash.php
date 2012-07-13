@@ -14,13 +14,13 @@ require_once PLODIS_BASE . '/interfaces/Redis_Hash_2_6_0.php';
 class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
 
 	protected $sql = array(
-		'h_select'		=> 'SELECT list_index, item FROM <DB> WHERE key=? ORDER BY id',
-		'h_insert' 		=> 'INSERT INTO <DB> (key, list_index, item) VALUES (?, ?, ?)',
-		'h_update' 		=> 'UPDATE <DB> SET item=? WHERE key=? AND list_index=?',
-		'h_delete'		=> 'DELETE FROM <DB> WHERE key=? AND list_index=?',
+		'h_select'		=> 'SELECT field, item FROM <DB> WHERE key=? ORDER BY id',
+		'h_insert' 		=> 'INSERT INTO <DB> (key, field, item) VALUES (?, ?, ?)',
+		'h_update' 		=> 'UPDATE <DB> SET item=? WHERE key=? AND field=?',
+		'h_delete'		=> 'DELETE FROM <DB> WHERE key=? AND field=?',
 		'hlen'			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
-		'hget'			=> 'SELECT id, item FROM <DB> WHERE key=? AND list_index=?',
-		'hincrby'		=> 'UPDATE <DB> SET item=item+? WHERE key=? AND list_index=?',
+		'hget'			=> 'SELECT id, item FROM <DB> WHERE key=? AND field=?',
+		'hincrby'		=> 'UPDATE <DB> SET item=item+? WHERE key=? AND field=?',
 	);
 	
     /**

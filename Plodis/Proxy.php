@@ -141,9 +141,9 @@ class Plodis_DB {
 	 * @var multitype:string
 	 */
 	private static $create_sql = array(
-		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB, list_index NUMERIC, expiry NUMERIC)',
+		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, field NUMERIC, item BLOB, expiry NUMERIC)',
 		'CREATE INDEX IF NOT EXISTS <DB>_key ON <DB> (key)',
-		'CREATE INDEX IF NOT EXISTS <DB>_list_index ON <DB> (key, list_index)',
+		'CREATE INDEX IF NOT EXISTS <DB>_field ON <DB> (key, field)',
 		'CREATE INDEX IF NOT EXISTS <DB>_expiry ON <DB> (expiry)',
 	);
 	
@@ -232,12 +232,12 @@ class Plodis_DB {
 	}
 	
 	public function debug() {
-		$stmt = $this->cachedStmt("SELECT * FROM <DB> ORDER BY list_index, id");
+		$stmt = $this->cachedStmt("SELECT * FROM <DB> ORDER BY field, id");
 		$stmt->execute();
 		fputs(STDERR, "\n\n");
 		while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 			$time = ($row['expiry']) ? $row['expiry'] - time() : 'inf';
-			fprintf(STDERR, "%3d %3d %3s %-10s %s\n", $row['id'], $row['list_index'], $time, $row['key'], $row['item']);
+			fprintf(STDERR, "%3d %3d %3s %-10s %s\n", $row['id'], $row['field'], $time, $row['key'], $row['item']);
 		}
 	}
 	

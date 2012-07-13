@@ -33,7 +33,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	
 		// if an object or a hash we delete and recreate
 		if($count > 1) {
-			$this->del($key);
+			$this->proxy->generic->del(array($key));
 		}
 	
 		$this->executeStmt('insert_key', array($key, $value, $seconds));

@@ -123,6 +123,26 @@ class ListTest extends BaseTest {
 		$this->assertSame(array('one', 'four', 'three', 'three', 'four'), $this->db->lrange('test1', 0, -1));
 	}
 	
+	function testLSet() {
+		$this->db->rpush('test1', 'one', 'two', 'three', 'three', 'four');
+		
+		$this->db->lset('test1', 1, 'five');
+		$this->assertSame(array('one', 'five', 'three', 'three', 'four'), $this->db->lrange('test1', 0, -1));
+		
+		$this->db->lset('test1', 4, 'six');
+		$this->assertSame(array('one', 'five', 'three', 'three', 'six'), $this->db->lrange('test1', 0, -1));
+		
+		$this->db->lset('test1', 0, 'seven');
+		$this->assertSame(array('seven', 'five', 'three', 'three', 'six'), $this->db->lrange('test1', 0, -1));
+		
+		// negative indicies
+		$this->db->lset('test1', -2, 'eight');
+		$this->assertSame(array('seven', 'five', 'three', 'eight', 'six'), $this->db->lrange('test1', 0, -1));
+		
+		$this->assertThrows('RuntimeException: Index out of range: 5', $this->db, 'lset', 'test1', 5, 'nine');
+		
+	}
+	
 	function testLPop() {
 		$this->assertSame(null, $this->db->lpop('test1'));
 		$this->db->rpush('test1', 'one', 'two', 'three');
@@ -191,5 +211,30 @@ class ListTest extends BaseTest {
 		
 		$this->assertSame('c', $this->db->rpoplpush('test2', 'test2'));
 		$this->assertSame(array('c', 'three', 'a', 'b'), $this->db->lrange('test2', 0, -1));
+	}
+	
+	function testLPushX() {
+		$this->assertSame(0, $this->db->lpushx('test1', 'one'));
+		$this->assertSame(null, $this->db->get('test1'));
+		
+		$this->db->lpush('test1', 'one');
+		$this->assertSame(-1, $this->db->lpushx('test1', 'two'));
+		$this->assertSame(array('two', 'one'), $this->db->lrange('test1', 0, -1));
+	}
+	
+	function testRPushX() {
+		$this->assertSame(0, $this->db->rpushx('test1', 'one'));
+		$this->assertSame(null, $this->db->get('test1'));
+	
+		$this->db->rpush('test1', 'one');
+		$this->assertSame(-1, $this->db->rpushx('test1', 'two'));
+		$this->assertSame(array('one', 'two'), $this->db->lrange('test1', 0, -1));
+	}
+	
+	function testOverwriteList() {
+		$this->db->rpush('test1', 'one', 'two', 'three');
+		
+		$this->db->set('test1', 'one');
+		$this->assertSame('one', $this->db->get('test1'));
 	}
 }

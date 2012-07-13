@@ -239,15 +239,20 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function brpoplpush($source, $dest, $timeout) {
+		// this is slightly more complicated as we don't want to hold the lock while blocking
 		throw new PlodisNotImplementedError();
 	}
 	
 	function lpushx($key, $value) {
-		throw new PlodisNotImplementedError();
+		$current = $this->lindex($key, 0);
+		if($current == null) return 0;
+		return $this->lpush($key, array($value));
 	}
 	
 	function rpushx($key, $value) {
-		throw new PlodisNotImplementedError();
+		$current = $this->lindex($key, 0);
+		if($current == null) return 0;
+		return $this->rpush($key, array($value));
 	}
 	#endif
 }

@@ -110,7 +110,7 @@ class GenericTest extends BaseTest {
 		
 		// normal usage
 		$this->assertSame(1, $this->db->pexpire('test1', 20));
-		$this->assertSame(20, $this->db->pttl('test1'), $message='', $delta=1.0);
+		$this->assertEquals(20, $this->db->pttl('test1'), $message='', $delta=1.0);
 		
 		// non-existing key
 		$this->assertSame(0, $this->db->pexpire('test2', 20));
@@ -168,6 +168,22 @@ class GenericTest extends BaseTest {
 		
 		$this->db->rename('test3', 'test6');
 		$this->assertSame('five', $this->db->hget('test6', 'test'));
+	}
+	
+	function testRandom() {
+		$this->assertSame(null, $this->db->randomkey());
+		
+		$values = array('a' => 1, 'b' => 2, 'c' => 3, 'd' => 4, 'e' => 5);
+		$this->db->mset($values);
+		$diff = 0;
+		$prev = '';
+		for($i=0; $i<10; $i++) {
+			$c = $this->db->randomkey();
+			if($c != $prev) $diff++;
+			$this->assertTrue(array_key_exists($c, $values));
+			$prev = $c;
+		}
+		$this->assertGreaterThan(5, $diff);
 	}
 	
 }

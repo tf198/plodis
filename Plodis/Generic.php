@@ -19,6 +19,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		'get_fuzzy_keys'=> 'SELECT key FROM <DB> WHERE key LIKE ?',
 		'type'			=> 'SELECT field, weight FROM <DB> WHERE key=? LIMIT 1',
 		'rename'		=> 'UPDATE <DB> SET key=? WHERE key=?',
+		'random'		=> 'SELECT DISTINCT key FROM <DB> ORDER BY RANDOM() LIMIT 1',
 	);
 	
 	private $alarm = 0;
@@ -120,7 +121,8 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	}
 	
 	function randomkey() {
-		throw new PlodisNotImplementedError;
+		$data = $this->fetchOne('random');
+		return $data[0];
 	}
 	
 	function rename($key, $newkey) {

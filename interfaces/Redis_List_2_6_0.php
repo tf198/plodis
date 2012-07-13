@@ -29,7 +29,13 @@ interface Redis_List_2_6_0 {
      *
      * @param string $key (multiple)
      * @param integer $timeout
-     * @return null no documentation available
+     * @return multitype:string specifically
+     *   
+     *   * A `null` multi-bulk when no element could be popped and the timeout expired.
+     *   * A two-element multi-bulk with the first element being the name of the key
+     *     where an element was popped and the second element being the value of the
+     *     popped element.
+     *
      */
     public function blpop($key, $timeout);
 
@@ -43,7 +49,13 @@ interface Redis_List_2_6_0 {
      *
      * @param string $key (multiple)
      * @param integer $timeout
-     * @return null no documentation available
+     * @return multitype:string specifically
+     *   
+     *   * A `null` multi-bulk when no element could be popped and the timeout expired.
+     *   * A two-element multi-bulk with the first element being the name of the key
+     *     where an element was popped and the second element being the value of the
+     *     popped element.
+     *
      */
     public function brpop($key, $timeout);
 
@@ -58,7 +70,16 @@ interface Redis_List_2_6_0 {
      * @param string $source
      * @param string $destination
      * @param integer $timeout
-     * @return null no documentation available
+     * @return string the element being popped from `source` and pushed to `destination`.
+     *   If `timeout` is reached, a @nil-reply is returned.
+     *   
+     *   ## Pattern Reliable queue
+     *   
+     *   Please see the pattern description in the `RPOPLPUSH` documentation.
+     *   
+     *   ## Pattern Circular list
+     *   
+     *   Please see the pattern description in the `RPOPLPUSH` documentation.
      */
     public function brpoplpush($source, $destination, $timeout);
 
@@ -72,7 +93,8 @@ interface Redis_List_2_6_0 {
      *
      * @param string $key
      * @param integer $index
-     * @return null no documentation available
+     * @return string the requested element, or `null` when `index` is out of range.
+     *
      */
     public function lindex($key, $index);
 
@@ -88,7 +110,9 @@ interface Redis_List_2_6_0 {
      * @param string $where [ BEFORE, AFTER ]
      * @param string $pivot
      * @param string $value
-     * @return null no documentation available
+     * @return integer the length of the list after the insert operation, or `-1` when
+     *   the value `pivot` was not found.
+     *
      */
     public function linsert($key, $where, $pivot, $value);
 
@@ -101,7 +125,8 @@ interface Redis_List_2_6_0 {
      * @link http://redis.io/commands/llen LLEN
      *
      * @param string $key
-     * @return null no documentation available
+     * @return integer the length of the list at `key`.
+     *
      */
     public function llen($key);
 
@@ -114,7 +139,8 @@ interface Redis_List_2_6_0 {
      * @link http://redis.io/commands/lpop LPOP
      *
      * @param string $key
-     * @return null no documentation available
+     * @return string the value of the first element, or `null` when `key` does not exist.
+     *
      */
     public function lpop($key);
 
@@ -128,7 +154,8 @@ interface Redis_List_2_6_0 {
      *
      * @param string $key
      * @param string $value (multiple)
-     * @return null no documentation available
+     * @return integer the length of the list after the push operations.
+     *
      */
     public function lpush($key, $value);
 
@@ -142,7 +169,8 @@ interface Redis_List_2_6_0 {
      *
      * @param string $key
      * @param string $value
-     * @return null no documentation available
+     * @return integer the length of the list after the push operation.
+     *
      */
     public function lpushx($key, $value);
 
@@ -157,7 +185,8 @@ interface Redis_List_2_6_0 {
      * @param string $key
      * @param integer $start
      * @param integer $stop
-     * @return null no documentation available
+     * @return multitype:string list of elements in the specified range.
+     *
      */
     public function lrange($key, $start, $stop);
 
@@ -172,7 +201,8 @@ interface Redis_List_2_6_0 {
      * @param string $key
      * @param integer $count
      * @param string $value
-     * @return null no documentation available
+     * @return integer the number of removed elements.
+     *
      */
     public function lrem($key, $count, $value);
 
@@ -187,7 +217,8 @@ interface Redis_List_2_6_0 {
      * @param string $key
      * @param integer $index
      * @param string $value
-     * @return null no documentation available
+     * @return null
+     *
      */
     public function lset($key, $index, $value);
 
@@ -202,7 +233,8 @@ interface Redis_List_2_6_0 {
      * @param string $key
      * @param integer $start
      * @param integer $stop
-     * @return null no documentation available
+     * @return null
+     *
      */
     public function ltrim($key, $start, $stop);
 
@@ -215,7 +247,8 @@ interface Redis_List_2_6_0 {
      * @link http://redis.io/commands/rpop RPOP
      *
      * @param string $key
-     * @return null no documentation available
+     * @return string the value of the last element, or `null` when `key` does not exist.
+     *
      */
     public function rpop($key);
 
@@ -229,7 +262,8 @@ interface Redis_List_2_6_0 {
      *
      * @param string $source
      * @param string $destination
-     * @return null no documentation available
+     * @return string the element being popped and pushed.
+     *
      */
     public function rpoplpush($source, $destination);
 
@@ -243,7 +277,8 @@ interface Redis_List_2_6_0 {
      *
      * @param string $key
      * @param string $value (multiple)
-     * @return null no documentation available
+     * @return integer the length of the list after the push operation.
+     *
      */
     public function rpush($key, $value);
 
@@ -257,7 +292,8 @@ interface Redis_List_2_6_0 {
      *
      * @param string $key
      * @param string $value
-     * @return null no documentation available
+     * @return integer the length of the list after the push operation.
+     *
      */
     public function rpushx($key, $value);
 

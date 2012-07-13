@@ -28,7 +28,7 @@ interface Redis_Connection_2_6_0 {
      * @link http://redis.io/commands/auth AUTH
      *
      * @param string $password
-     * @return null no documentation available
+     * @return null
      */
     public function auth($password);
 
@@ -41,7 +41,8 @@ interface Redis_Connection_2_6_0 {
      * @link http://redis.io/commands/echo ECHO
      *
      * @param string $message
-     * @return null no documentation available
+     * @return string
+     *
      */
     public function _echo($message);
 
@@ -79,7 +80,7 @@ interface Redis_Connection_2_6_0 {
      * @link http://redis.io/commands/select SELECT
      *
      * @param integer $index
-     * @return null no documentation available
+     * @return null
      */
     public function select($index);
 

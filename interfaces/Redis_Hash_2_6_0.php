@@ -29,7 +29,9 @@ interface Redis_Hash_2_6_0 {
      *
      * @param string $key
      * @param string $field (multiple)
-     * @return null no documentation available
+     * @return integer the number of fields that were removed from the hash, not
+     *   including specified but non existing fields.
+     *
      */
     public function hdel($key, $field);
 
@@ -43,7 +45,11 @@ interface Redis_Hash_2_6_0 {
      *
      * @param string $key
      * @param string $field
-     * @return null no documentation available
+     * @return integer specifically
+     *   
+     *   * `1` if the hash contains `field`.
+     *   * `0` if the hash does not contain `field`, or `key` does not exist.
+     *
      */
     public function hexists($key, $field);
 
@@ -57,7 +63,9 @@ interface Redis_Hash_2_6_0 {
      *
      * @param string $key
      * @param string $field
-     * @return null no documentation available
+     * @return string the value associated with `field`, or `null` when `field` is not
+     *   present in the hash or `key` does not exist.
+     *
      */
     public function hget($key, $field);
 
@@ -70,7 +78,9 @@ interface Redis_Hash_2_6_0 {
      * @link http://redis.io/commands/hgetall HGETALL
      *
      * @param string $key
-     * @return null no documentation available
+     * @return multitype:string list of fields and their values stored in the hash, or an
+     *   empty list when `key` does not exist.
+     *
      */
     public function hgetall($key);
 
@@ -85,7 +95,8 @@ interface Redis_Hash_2_6_0 {
      * @param string $key
      * @param string $field
      * @param integer $increment
-     * @return null no documentation available
+     * @return integer the value at `field` after the increment operation.
+     *
      */
     public function hincrby($key, $field, $increment);
 
@@ -100,7 +111,8 @@ interface Redis_Hash_2_6_0 {
      * @param string $key
      * @param string $field
      * @param double $increment
-     * @return null no documentation available
+     * @return string the value of `field` after the increment.
+     *
      */
     public function hincrbyfloat($key, $field, $increment);
 
@@ -113,7 +125,9 @@ interface Redis_Hash_2_6_0 {
      * @link http://redis.io/commands/hkeys HKEYS
      *
      * @param string $key
-     * @return null no documentation available
+     * @return multitype:string list of fields in the hash, or an empty list when `key` does
+     *   not exist.
+     *
      */
     public function hkeys($key);
 
@@ -126,7 +140,8 @@ interface Redis_Hash_2_6_0 {
      * @link http://redis.io/commands/hlen HLEN
      *
      * @param string $key
-     * @return null no documentation available
+     * @return integer number of fields in the hash, or `0` when `key` does not exist.
+     *
      */
     public function hlen($key);
 
@@ -140,7 +155,14 @@ interface Redis_Hash_2_6_0 {
      *
      * @param string $key
      * @param string $field (multiple)
-     * @return null no documentation available
+     * @return multitype:string list of values associated with the given fields, in the same
+     *   order as they are requested.
+     *   
+     *   ```cli
+     *   HSET myhash field1 "Hello"
+     *   HSET myhash field2 "World"
+     *   HMGET myhash field1 field2 nofield
+     *   ```
      */
     public function hmget($key, $field);
 
@@ -154,7 +176,8 @@ interface Redis_Hash_2_6_0 {
      *
      * @param string $key
      * @param multitype:string $fields (multiple)
-     * @return null no documentation available
+     * @return null
+     *
      */
     public function hmset($key, $fields);
 
@@ -169,7 +192,11 @@ interface Redis_Hash_2_6_0 {
      * @param string $key
      * @param string $field
      * @param string $value
-     * @return null no documentation available
+     * @return integer specifically
+     *   
+     *   * `1` if `field` is a new field in the hash and `value` was set.
+     *   * `0` if `field` already exists in the hash and the value was updated.
+     *
      */
     public function hset($key, $field, $value);
 
@@ -184,7 +211,11 @@ interface Redis_Hash_2_6_0 {
      * @param string $key
      * @param string $field
      * @param string $value
-     * @return null no documentation available
+     * @return integer specifically
+     *   
+     *   * `1` if `field` is a new field in the hash and `value` was set.
+     *   * `0` if `field` already exists in the hash and no operation was performed.
+     *
      */
     public function hsetnx($key, $field, $value);
 
@@ -197,7 +228,9 @@ interface Redis_Hash_2_6_0 {
      * @link http://redis.io/commands/hvals HVALS
      *
      * @param string $key
-     * @return null no documentation available
+     * @return multitype:string list of values in the hash, or an empty list when `key` does
+     *   not exist.
+     *
      */
     public function hvals($key);
 

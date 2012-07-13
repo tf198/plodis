@@ -29,7 +29,8 @@ interface Redis_String_2_6_0 {
      *
      * @param string $key
      * @param string $value
-     * @return null no documentation available
+     * @return integer the length of the string after the append operation.
+     *
      */
     public function append($key, $value);
 
@@ -44,7 +45,10 @@ interface Redis_String_2_6_0 {
      * @param string $key
      * @param integer $start
      * @param integer $end
-     * @return null no documentation available
+     * @return integer
+     *   
+     *   The number of bits set to 1.
+     *
      */
     public function bitcount($key, $start=null, $end=null);
 
@@ -59,7 +63,11 @@ interface Redis_String_2_6_0 {
      * @param string $operation
      * @param string $destkey
      * @param string $key (multiple)
-     * @return null no documentation available
+     * @return integer
+     *   
+     *   The size of the string stored in the destination key, that is equal to the
+     *   size of the longest input string.
+     *
      */
     public function bitop($operation, $destkey, $key);
 
@@ -72,7 +80,8 @@ interface Redis_String_2_6_0 {
      * @link http://redis.io/commands/decr DECR
      *
      * @param string $key
-     * @return null no documentation available
+     * @return integer the value of `key` after the decrement
+     *
      */
     public function decr($key);
 
@@ -86,7 +95,8 @@ interface Redis_String_2_6_0 {
      *
      * @param string $key
      * @param integer $decrement
-     * @return null no documentation available
+     * @return integer the value of `key` after the decrement
+     *
      */
     public function decrby($key, $decrement);
 
@@ -99,7 +109,8 @@ interface Redis_String_2_6_0 {
      * @link http://redis.io/commands/get GET
      *
      * @param string $key
-     * @return null no documentation available
+     * @return string the value of `key`, or `null` when `key` does not exist.
+     *
      */
     public function get($key);
 
@@ -113,7 +124,8 @@ interface Redis_String_2_6_0 {
      *
      * @param string $key
      * @param integer $offset
-     * @return null no documentation available
+     * @return integer the bit value stored at _offset_.
+     *
      */
     public function getbit($key, $offset);
 
@@ -128,7 +140,8 @@ interface Redis_String_2_6_0 {
      * @param string $key
      * @param integer $start
      * @param integer $end
-     * @return null no documentation available
+     * @return string
+     *
      */
     public function getrange($key, $start, $end);
 
@@ -142,7 +155,8 @@ interface Redis_String_2_6_0 {
      *
      * @param string $key
      * @param string $value
-     * @return null no documentation available
+     * @return string the old value stored at `key`, or `null` when `key` did not exist.
+     *
      */
     public function getset($key, $value);
 
@@ -155,7 +169,8 @@ interface Redis_String_2_6_0 {
      * @link http://redis.io/commands/incr INCR
      *
      * @param string $key
-     * @return null no documentation available
+     * @return integer the value of `key` after the increment
+     *
      */
     public function incr($key);
 
@@ -169,7 +184,8 @@ interface Redis_String_2_6_0 {
      *
      * @param string $key
      * @param integer $increment
-     * @return null no documentation available
+     * @return integer the value of `key` after the increment
+     *
      */
     public function incrby($key, $increment);
 
@@ -183,7 +199,8 @@ interface Redis_String_2_6_0 {
      *
      * @param string $key
      * @param double $increment
-     * @return null no documentation available
+     * @return string the value of `key` after the increment.
+     *
      */
     public function incrbyfloat($key, $increment);
 
@@ -196,7 +213,8 @@ interface Redis_String_2_6_0 {
      * @link http://redis.io/commands/mget MGET
      *
      * @param string $key (multiple)
-     * @return null no documentation available
+     * @return multitype:string list of values at the specified keys.
+     *
      */
     public function mget($key);
 
@@ -209,7 +227,8 @@ interface Redis_String_2_6_0 {
      * @link http://redis.io/commands/mset MSET
      *
      * @param multitype:key $keys (multiple)
-     * @return null no documentation available
+     * @return null always `true` since `MSET` can't fail.
+     *
      */
     public function mset($keys);
 
@@ -222,7 +241,11 @@ interface Redis_String_2_6_0 {
      * @link http://redis.io/commands/msetnx MSETNX
      *
      * @param multitype:key $keys (multiple)
-     * @return null no documentation available
+     * @return integer specifically
+     *   
+     *   * `1` if the all the keys were set.
+     *   * `0` if no key was set (at least one key already existed).
+     *
      */
     public function msetnx($keys);
 
@@ -237,7 +260,7 @@ interface Redis_String_2_6_0 {
      * @param string $key
      * @param integer $milliseconds
      * @param string $value
-     * @return null no documentation available
+     * @return null
      */
     public function psetex($key, $milliseconds, $value);
 
@@ -251,7 +274,8 @@ interface Redis_String_2_6_0 {
      *
      * @param string $key
      * @param string $value
-     * @return null no documentation available
+     * @return null always `true` since `SET` can't fail.
+     *
      */
     public function set($key, $value);
 
@@ -266,7 +290,8 @@ interface Redis_String_2_6_0 {
      * @param string $key
      * @param integer $offset
      * @param string $value
-     * @return null no documentation available
+     * @return integer the original bit value stored at _offset_.
+     *
      */
     public function setbit($key, $offset, $value);
 
@@ -281,7 +306,8 @@ interface Redis_String_2_6_0 {
      * @param string $key
      * @param integer $seconds
      * @param string $value
-     * @return null no documentation available
+     * @return null
+     *
      */
     public function setex($key, $seconds, $value);
 
@@ -295,7 +321,11 @@ interface Redis_String_2_6_0 {
      *
      * @param string $key
      * @param string $value
-     * @return null no documentation available
+     * @return integer specifically
+     *   
+     *   * `1` if the key was set
+     *   * `0` if the key was not set
+     *
      */
     public function setnx($key, $value);
 
@@ -310,7 +340,8 @@ interface Redis_String_2_6_0 {
      * @param string $key
      * @param integer $offset
      * @param string $value
-     * @return null no documentation available
+     * @return integer the length of the string after it was modified by the command.
+     *
      */
     public function setrange($key, $offset, $value);
 
@@ -323,7 +354,9 @@ interface Redis_String_2_6_0 {
      * @link http://redis.io/commands/strlen STRLEN
      *
      * @param string $key
-     * @return null no documentation available
+     * @return integer the length of the string at `key`, or `0` when `key` does not
+     *   exist.
+     *
      */
     public function strlen($key);
 

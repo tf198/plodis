@@ -43,7 +43,7 @@ function redis_return_type($key) {
 	return 'null';
 }
 
-function redis_command_info($key, $command) {
+function redis_command_info($cmd, $command) {
 	
 	$type_map = array(
 		'key' => 'string',
@@ -51,7 +51,7 @@ function redis_command_info($key, $command) {
 		'posix time' => 'integer',
 	);
 	
-	$func = str_replace(' ', '_', strtolower($key));
+	$func = str_replace(' ', '_', strtolower($cmd));
 	if($func == 'echo') $func = "_echo";
 	
 	$doc = array('/**');
@@ -60,7 +60,7 @@ function redis_command_info($key, $command) {
 	$doc[] = "     * @since {$command['since']}";
 	$doc[] = "     * @api";
 	$doc[] = "     * @group {$command['group']}";
-	$doc[] = "     * @link http://redis.io/commands/" . strtolower(str_replace('', '-', $key)) . " {$key}";
+	$doc[] = "     * @link http://redis.io/commands/" . strtolower(str_replace('', '-', $cmd)) . " {$cmd}";
 	$doc[] = "     *";
 	
 	if(!isset($command['arguments'])) $command['arguments'] = array();
@@ -100,7 +100,7 @@ function redis_command_info($key, $command) {
 		$params[] = $param;
 	}
 	
-	$doc[] = "     * @return " . redis_return_type($key);
+	$doc[] = "     * @return " . redis_return_type($cmd);
 	$doc[] = "     */";
 	
 	$raw_params = implode(', ', $raw_params);

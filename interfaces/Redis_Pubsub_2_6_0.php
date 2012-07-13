@@ -28,7 +28,7 @@ interface Redis_Pubsub_2_6_0 {
      * @link http://redis.io/commands/psubscribe PSUBSCRIBE
      *
      * @param multitype:pattern $patterns (multiple)
-     * @return null no documentation available
+     * @return null
      */
     public function psubscribe($patterns);
 
@@ -42,7 +42,7 @@ interface Redis_Pubsub_2_6_0 {
      *
      * @param string $channel
      * @param string $message
-     * @return null no documentation available
+     * @return integer the number of clients that received the message.
      */
     public function publish($channel, $message);
 
@@ -55,7 +55,7 @@ interface Redis_Pubsub_2_6_0 {
      * @link http://redis.io/commands/punsubscribe PUNSUBSCRIBE
      *
      * @param string $pattern (multiple)
-     * @return null no documentation available
+     * @return null
      */
     public function punsubscribe($pattern=null);
 
@@ -68,7 +68,7 @@ interface Redis_Pubsub_2_6_0 {
      * @link http://redis.io/commands/subscribe SUBSCRIBE
      *
      * @param multitype:string $channels (multiple)
-     * @return null no documentation available
+     * @return null
      */
     public function subscribe($channels);
 
@@ -81,7 +81,7 @@ interface Redis_Pubsub_2_6_0 {
      * @link http://redis.io/commands/unsubscribe UNSUBSCRIBE
      *
      * @param string $channel (multiple)
-     * @return null no documentation available
+     * @return null
      */
     public function unsubscribe($channel=null);
 

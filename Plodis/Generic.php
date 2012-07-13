@@ -122,6 +122,8 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	
 	function randomkey() {
 		$data = $this->fetchOne('random');
+		if(!$data) return null;
+		
 		return $data[0];
 	}
 	

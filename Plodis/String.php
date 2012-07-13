@@ -10,7 +10,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	public static $return_values = false;
 	
 	protected $sql = array(
-		'select_key' 	=> 'SELECT item, field FROM <DB> WHERE key=?',
+		'select_key' 	=> 'SELECT item, field, weight FROM <DB> WHERE key=?',
 		'insert_key' 	=> 'INSERT INTO <DB> (key, item, expiry) VALUES (?, ?, ?)',
 		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=?, field=NULL WHERE key=?',
 		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
@@ -63,6 +63,8 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 			return null;
 		}
 		if($row[1] !== null && $_throw) throw new RuntimeException('Operation against a key holding the wrong kind of value');
+		if($row[2] !== null && $_throw) throw new RuntimeException('Operation against a key holding the wrong kind of value');
+		
 		return $row[0];
 	}
 	

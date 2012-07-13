@@ -141,4 +141,33 @@ class GenericTest extends BaseTest {
 		usleep(25000); // allow a fraction over 20 milliseconds
 		$this->assertSame(null, $this->db->get('test1'));
 	}
+	
+	function testType() {
+		$this->db->set('test1', '1');
+		$this->assertSame('string', $this->db->type('test1'));
+		
+		$this->db->rpush('test2', '1');
+		$this->assertSame('list', $this->db->type('test2'));
+		
+		$this->db->hset('test3', 'one', '1');
+		$this->assertSame('hash', $this->db->type('test3'));
+		
+		// TODO: Set and ZSet
+	}
+	
+	function testRename() {
+		$this->db->rpush('test1', 'one', 'two', 'three');
+		$this->db->set('test2', 'four');
+		$this->db->hset('test3', 'test', 'five');
+		
+		$this->db->rename('test1', 'test4');
+		$this->assertSame(array('one', 'two', 'three'), $this->db->lrange('test4', 0, -1));
+		
+		$this->db->rename('test2', 'test5');
+		$this->assertSame('four', $this->db->get('test5'));
+		
+		$this->db->rename('test3', 'test6');
+		$this->assertSame('five', $this->db->hget('test6', 'test'));
+	}
+	
 }

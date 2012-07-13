@@ -15,6 +15,7 @@ EOF
 $key = rand(1000, 9999);
 
 define('BENCH_DATA', 'data/benchmark.sq3');
+#define('BENCH_DATA', ':memory:');
 define('LOOP_SIZE', 1000);
 
 function bench($message, $count=1) {
@@ -102,6 +103,5 @@ bench('RPOP', LOOP_SIZE);
 
 // free everything we can
 unset($pdo, $db);
-@unlink(BENCH_DATA);
 bench('cleanup');
 fprintf(STDOUT, "===== ==== ====== ==== ======= =======================================\n");

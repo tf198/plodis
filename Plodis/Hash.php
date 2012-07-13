@@ -15,7 +15,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
 
 	protected $sql = array(
 		'h_select'		=> 'SELECT field, item FROM <DB> WHERE key=? ORDER BY id',
-		'h_insert' 		=> 'INSERT INTO <DB> (key, field, item) VALUES (?, ?, ?)',
+		'h_insert' 		=> 'INSERT INTO <DB> (key, field, weight, item) VALUES (?, ?, 1, ?)',
 		'h_update' 		=> 'UPDATE <DB> SET item=? WHERE key=? AND field=?',
 		'h_delete'		=> 'DELETE FROM <DB> WHERE key=? AND field=?',
 		'hlen'			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',

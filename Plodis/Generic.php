@@ -17,6 +17,8 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		'expire'		=> 'DELETE FROM <DB> WHERE expiry IS NOT NULL AND expiry < ?',
 		'get_keys' 		=> 'SELECT key FROM <DB>',
 		'get_fuzzy_keys'=> 'SELECT key FROM <DB> WHERE key LIKE ?',
+		'type'			=> 'SELECT field, weight FROM <DB> WHERE key=? LIMIT 1',
+		'rename'		=> 'UPDATE <DB> SET key=? WHERE key=?',
 	);
 	
 	private $alarm = 0;
@@ -122,7 +124,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	}
 	
 	function rename($key, $newkey) {
-		throw new PlodisNotImplementedError;
+		$c = $this->executeStmt('rename', array($newkey, $key));
 	}
 	
 	function renamenx($key, $newkey) {
@@ -138,6 +140,16 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	}
 	
 	function type($key) {
-		throw new PlodisNotImplementedError;
+		$data = $this->fetchOne('type', array($key));
+		
+		if(!$data) return null;
+
+		if($data[0] == null) {
+			return ($data[1] === null) ? "string" : "list";
+		}
+		
+		if($data[1] === '1') return 'hash';
+		if($data[1] === null) return 'set';
+		return 'zset';
 	}
 }

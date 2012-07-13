@@ -74,8 +74,9 @@ to it yet.
 ======= ======= ======= ======= ======= =======
 id      AUTO    AUTO    AUTO    AUTO    AUTO
 key     key     key     key     key     key
-field   NULL    weight  field   NULL    weight
-item    value   value   value   value   value
+field   NULL    NULL    field   value   value
+weight  NULL	<=0     1       NULL    <=0
+item    value   value   value   NULL    NULL
 ======= ======= ======= ======= ======= =======
 
 TODO

@@ -231,6 +231,28 @@ class ListTest extends BaseTest {
 		$this->assertSame(array('one', 'two'), $this->db->lrange('test1', 0, -1));
 	}
 	
+	function testLTrim() {
+		$this->db->rpush('test1', 'a', 'b', 'c', 'd', 'e');
+		$this->assertSame(null, $this->db->ltrim('test1', 0, 3));
+		$this->assertSame(array('a', 'b', 'c'), $this->db->lrange('test1', 0, -1));
+		
+		$this->db->rpush('test2', 'a', 'b', 'c', 'd', 'e');
+		$this->assertSame(null, $this->db->ltrim('test2', 0, -2));
+		$this->assertSame(array('a', 'b', 'c', 'd'), $this->db->lrange('test2', 0, -1));
+		
+		$this->db->rpush('test3', 'a', 'b', 'c', 'd', 'e');
+		$this->assertSame(null, $this->db->ltrim('test3', 1, 3));
+		$this->assertSame(array('b', 'c'), $this->db->lrange('test3', 0, -1));
+		
+		$this->db->rpush('test4', 'a', 'b', 'c', 'd', 'e');
+		$this->assertSame(null, $this->db->ltrim('test4', 1, -3));
+		$this->assertSame(array('b', 'c'), $this->db->lrange('test4', 0, -1));
+		
+		$this->db->rpush('test5', 'a', 'b', 'c', 'd', 'e');
+		$this->assertSame(null, $this->db->ltrim('test5', -4, -2));
+		$this->assertSame(array('c', 'd'), $this->db->lrange('test5', 0, -1));
+	}
+	
 	function testOverwriteList() {
 		$this->db->rpush('test1', 'one', 'two', 'three');
 		

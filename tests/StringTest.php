@@ -59,11 +59,6 @@ class StringTest extends BaseTest {
 		Plodis_String::$return_values = true;
 		$this->assertSame(3, $this->db->incr('test1'));
 		Plodis_String::$return_values = false;
-		
-		//$this->assertThrows('x', $this->db, 'incr', 'test2');
-		//$this->db->incr('test2');
-		//var_dump($this->db->get('test2'));
-		$this->markTestIncomplete();
 	}
 	
 	function testAppend() {

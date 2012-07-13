@@ -24,7 +24,7 @@ it will throw a ``PlodisNotImplementedError``.
 :Hashes:
    Not implemented.
 :List:
-   Full 2.6.0 coverage except for LTRIM.
+   Full 2.6.0 coverage.
 :Sets:
    Not implemented.
 :Sorted Sets:
@@ -68,6 +68,15 @@ Implementation
 Each Plodis instance is backed by a single SQLite data file with as many optomisations turned on as possible so there is the potential for data
 loss in the event of a crash (it should be possible to set some guarantees using the Server module, its just a file after all, but I haven't got round
 to it yet.
+
+======= ======= ======= ======= ======= =======
+        String  List    Hash    Set     SSet
+======= ======= ======= ======= ======= =======
+id      AUTO    AUTO    AUTO    AUTO    AUTO
+key     key     key     key     key     key
+field   NULL    weight  field   NULL    weight
+item    value   value   value   value   value
+======= ======= ======= ======= ======= =======
 
 TODO
 ====

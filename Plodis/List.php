@@ -31,6 +31,8 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY list_index, id LIMIT ?)',
 		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY list_index DESC, id DESC LIMIT ?)',
 		'list_del' 		=> 'DELETE FROM <DB> WHERE id=?',
+		'ltrim_l'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY list_index, id LIMIT ?)',
+		'ltrim_r'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ?)'
 	);
 	
 	#ifdef REDIS_1_0_0
@@ -65,9 +67,37 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		return $row;
 	}
 	
-	function ltrim($key, $start, $stop) {
-		// TODO: this is actually quite tricky - need more thought
-		throw new PlodisNotImplementedError;
+	function ltrim($key, $start, $end) {
+		#$this->proxy->log("Starting {$start}, {$end}", LOG_WARNING);
+		if($start > 0) {
+			$c = $this->executeStmt('ltrim_l', array($key, $start));
+			#$this->proxy->log("Removed {$c} elements from start", LOG_WARNING);
+			if($end > 0) $end -= $start;
+			$start = 0;
+		} // $start is 0 or negative
+		if($end < -1) {
+			$c = $this->executeStmt('ltrim_r', array($key, -$end-1));
+			#$this->proxy->log("Removed {$c} elements from end", LOG_WARNING);
+			if($start < 0) $start -= $end;
+			$end = 0;
+		} // $end is 0 or positive
+		
+		if($start == 0 && $end <= 0) {
+			#$this->proxy->log("No further removals required", LOG_WARNING);
+			return;
+		}
+		
+		$s = 'ltrim_r';
+		if($start < 0 && $end <= 0) {
+			$end = -$start;
+			$start = 0;
+			$s = 'ltrim_l';
+		}
+		if($start != 0) throw new RuntimeException("Unabled to proceed");
+		$c = $this->llen($key);
+		#$this->proxy->log("C: {$c}, end: $end", LOG_WARNING);
+		$c = $this->executeStmt($s, array($key, $c-$end));
+		#$this->proxy->log("Removed {$c} elements from {$s}", LOG_WARNING);
 	}
 	
 	function lrange($key, $start, $stop) {

@@ -172,4 +172,24 @@ class ListTest extends BaseTest {
 		
 		$this->assertSame(0, $this->db->llen('test2'));
 	}
+	
+	function testRPopLPush() {
+		$this->db->rpush('test1', 'one', 'two', 'three');
+		$this->db->rpush('test2', 'a', 'b', 'c');
+		
+		$this->assertSame('three', $this->db->rpoplpush('test1', 'test2'));
+		$this->assertSame(array('one', 'two'), $this->db->lrange('test1', 0, -1));
+		$this->assertSame(array('three', 'a', 'b', 'c'), $this->db->lrange('test2', 0, -1));
+		
+		// to empty list
+		$this->assertSame('two', $this->db->rpoplpush('test1', 'test3'));
+		$this->assertSame(array('one'), $this->db->lrange('test1', 0, -1));
+		$this->assertSame(array('two'), $this->db->lrange('test3', 0, -1));
+		
+		$this->assertSame('one', $this->db->rpoplpush('test1', 'test3'));
+		$this->assertSame(null, $this->db->rpoplpush('test1', 'test3'));
+		
+		$this->assertSame('c', $this->db->rpoplpush('test2', 'test2'));
+		$this->assertSame(array('c', 'three', 'a', 'b'), $this->db->lrange('test2', 0, -1));
+	}
 }

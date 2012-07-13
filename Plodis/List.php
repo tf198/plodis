@@ -193,7 +193,11 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	#ifdef REDIS_1_2_0
 	function rpoplpush($source, $destination) {
-		throw new RuntimeException('Not implemented');
+		$this->proxy->db->lock();
+		$item = $this->rpop($source);
+		if($item !== null) $this->lpush($destination, array($item));
+		$this->proxy->db->unlock();
+		return $item;
 	}
 	#endif
 	

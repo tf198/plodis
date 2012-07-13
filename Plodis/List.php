@@ -66,7 +66,8 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function ltrim($key, $start, $stop) {
-		throw new RuntimeException('Not implemented');
+		// TODO: this is actually quite tricky - need more thought
+		throw new PlodisNotImplementedError;
 	}
 	
 	function lrange($key, $start, $stop) {

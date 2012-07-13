@@ -24,7 +24,7 @@ it will throw a ``PlodisNotImplementedError``.
 :Hashes:
    Not implemented.
 :List:
-   Full coverage up to 2.0.0 plus LINSERT.
+   Full 2.6.0 coverage except for LTRIM.
 :Sets:
    Not implemented.
 :Sorted Sets:
@@ -37,7 +37,7 @@ it will throw a ``PlodisNotImplementedError``.
 :Scripting:
    Not implemented.  Should be possible with the PHP Lua extension though...
 :Connection:
-   Full coverage, though AUTH performs no actual authentication.
+   Full 2.6.0 coverage.
 :Server:
    Not implemented
 
@@ -60,6 +60,8 @@ Caveats
 :Pub / Sub:
    this is implemented as mailbox fanout using the Lists module - should be fine for everyday work but dont try and build a **twitter** with
    it.  Might look at reference fanout in the future: http://www.scribd.com/doc/16952419/Building-scalable-complex-apps-on-App-Engine
+:AUTH:
+   wont throw an error but doesn't actually do anything
 
 Implementation
 ==============

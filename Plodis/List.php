@@ -20,7 +20,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	public static $return_counts = false;
 	
 	protected $sql = array(
-		'lpush_index'	=> 'SELECT MIN(list_index) FROM <DB>',
+		'lpush_index'	=> 'SELECT MIN(list_index) FROM <DB> WHERE key=?',
 		'llen' 			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
 		'l_forward'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY list_index, id LIMIT ? OFFSET ?',
 		'l_reverse'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ? OFFSET ?',
@@ -36,6 +36,9 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	#ifdef REDIS_1_0_0
 	function llen($key) {
 		$row = $this->fetchOne('llen', array($key));
+		
+		// TODO: should throw exception if not a list 
+		
 		return (int) $row[0];
 	}
 	
@@ -126,12 +129,12 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		$this->proxy->db->lock();
 	
 		// find the lowest id
-		$id = $this->fetchOne('lpush_index');
+		$id = $this->fetchOne('lpush_index', array($key));
 		$id = ($id) ? $id[0] - 1 : -1;
 	
 		$stmt = $this->getStmt('l_insert');
 		foreach($values as $value) {
-			$stmt->execute(array($key, $value, $id--));
+			$stmt->execute(array($key, $value, --$id));
 		}
 	
 		$this->proxy->db->unlock();

@@ -105,6 +105,9 @@ class ListTest extends BaseTest {
 		$this->db->rpush('test1', 'nine');
 		$this->db->lpush('test1', 'ten');
 		$this->assertSame(array('ten', 'seven', 'one', 'five', 'two', 'three', 'three', 'six', 'eight', 'four', 'nine'), $this->db->lrange('test1', 0, -1));
+		
+		$this->db->linsert('test1', 'before', 'three', 'eleven');
+		$this->assertSame(array('ten', 'seven', 'one', 'five', 'two', 'eleven', 'three', 'three', 'six', 'eight', 'four', 'nine'), $this->db->lrange('test1', 0, -1));
 	}
 	
 	function testLRem() {
@@ -149,10 +152,24 @@ class ListTest extends BaseTest {
 	}
 	
 	function testBLPop() {
-		$this->markTestIncomplete();
+		$this->markTestSkipped();
 	}
 	
 	function testBRPop() {
-		$this->markTestIncomplete();
+		$this->markTestSkipped();
+	}
+	
+	function testLLen() {
+		$this->db->rpush('test1', 'one', 'two', 'three', 'three', 'four');
+		
+		$this->assertSame(5, $this->db->llen('test1'));
+		
+		$this->db->rpush('test1', 'five');
+		$this->assertSame(6, $this->db->llen('test1'));
+		
+		$this->db->lrem('test1', 0, 'three');
+		$this->assertSame(4, $this->db->llen('test1'));
+		
+		$this->assertSame(0, $this->db->llen('test2'));
 	}
 }

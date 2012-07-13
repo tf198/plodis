@@ -232,7 +232,7 @@ class Plodis_DB {
 	}
 	
 	public function debug() {
-		$stmt = $this->cachedStmt("SELECT * FROM <DB>");
+		$stmt = $this->cachedStmt("SELECT * FROM <DB> ORDER BY list_index, id");
 		$stmt->execute();
 		fputs(STDERR, "\n\n");
 		while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {

@@ -12,6 +12,8 @@ Total Step Total  Step  ops/s
 EOF
 		);
 
+$key = rand(1000, 9999);
+
 define('BENCH_DATA', 'data/benchmark.sq3');
 define('LOOP_SIZE', 1000);
 
@@ -26,85 +28,75 @@ function bench($message, $count=1) {
 	$GLOBALS['bench_mem'] = $mem;
 }
 
-bench('init');
-
-@unlink(BENCH_DATA);
-$pdo = new PDO('sqlite:' . BENCH_DATA);
-bench('PDO creating from new');
+bench('init (' . $key . ')');
 
 include "Plodis.php";
 bench('include');
 
-$db = new Plodis($pdo);
-bench('construct (including tables)');
-
-unset($db, $pdo);
-bench('free');
-
 $pdo = new PDO('sqlite:' . BENCH_DATA);
-bench('PDO from existing file');
+bench('PDO from existing data');
 
 $db = new Plodis($pdo);
-bench('construct (if not exists)');
+bench('construct');
 
-bench('Starting loop tests - ' . LOOP_SIZE . " iterations");
+bench("Starting loop tests - " . LOOP_SIZE . " iterations");
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->set('item_' . $i, $i+1);
+	$db->set("{$key}_{$i}", $i+1);
 }
 bench('SET (insert)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->set('item_' . $i, $i);
+	$db->set("{$key}_{$i}", $i);
 }
 bench('SET (update)', LOOP_SIZE);
 
 $db->db->lock();
 for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->set('item_' . $i, $i);
+	$db->set("{$key}_{$i}", $i);
 }
 $db->db->unlock();
 bench('SET (update, locked)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	assert($db->get('item_' . $i) == $i);
+	assert($db->get("{$key}_{$i}") == $i);
 }
 bench('GET', LOOP_SIZE);
 
 $db->db->lock();
 for($i=0; $i<LOOP_SIZE; $i++) {
-	assert($db->get('item_' . $i) == $i);
+	assert($db->get("{$key}_{$i}") == $i);
 }
 $db->db->unlock();
 bench('GET (locked)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->lpush('list1', $i);
+	$db->lpush("list_{$key}", $i);
 }
 bench('LPUSH', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->rpush('list1', $i);
+	$db->rpush("list_{$key}", $i);
 }
 bench('RPUSH', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->lpop('list1');
+	$db->lpop("list_{$key}");
 }
 bench('LPOP', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	assert($db->llen('list1') == LOOP_SIZE);
+	assert($db->llen("list_{$key}") == LOOP_SIZE);
 }
 bench('LLEN', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	assert($db->lindex('list1', $i) == $i);
+	assert($db->lindex("list_{$key}", $i) == $i);
 }
 bench('LINDEX', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->rpop('list1');
+	$db->rpop("list_{$key}");
 }
 bench('RPOP', LOOP_SIZE);
 

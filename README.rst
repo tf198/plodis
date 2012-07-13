@@ -82,10 +82,12 @@ TODO
 Performance
 ===========
 
-I thought it would be rubbish but actually it's not bad using a dedicated SQLite database.  These are on my AMD Phenom II x6 3.20Ghz with each loop
-set at 500.  You can expect ~4-10K SETs per sec and ~14K GETs in standard mode but if you lock the database you can get 2-3 times throughput.
-List operations are optomised for RPUSH/LPOP (ie FIFO) at around ~11-13K though RPOP isn't too bad if you want a stack - just avoid LPUSH if possible.
+I thought it would be rubbish but actually it's not bad using a dedicated SQLite database.  You can expect ~4-8K SETs per sec and ~13K/s GETs in standard mode 
+but if you lock the database you can get 2-3 times throughput. List operations are fairly consistent around ~9K/s, though LPUSH is a bit slower.
 As you can see the memory footprint for the package is around 600K - no need to change ``memory_limit`` in your ``php.ini``.  
+
+The benchmarks are all run on my AMD Phenom II x6 3.20Ghz using a *dirty* database - i.e. the data from previous runs is left in so it gives a good idea of real world usage
+and each loop set at 1000.
 
 Just rememeber that if performance becomes that important to you then you should probably shift to a Redis server! :-)
 
@@ -94,25 +96,23 @@ Mem (KB)   Time (ms)     Ops   Description
 ---------- ----------- ------- ---------------------------------------
 Total Step Total  Step  ops/s
 ===== ==== ====== ==== ======= =======================================
-  370  370      0    0   35848 init
-  371    0      1    1     897 PDO creating from new
-  637  265      3    2     498 include
-  727   90    484  481       2 construct (including tables)
-  727    0    484    0   10205 free
-  727    0    488    3     250 PDO from existing file
-  731    3    491    3     317 construct (if not exists)
-  731    0    491    0   12336 Starting loop tests - 500 iterations
-  829   98    616  124    4010 SET (insert)
-  829    0    664   47   10489 SET (update)
-  829    0    681   17   28715 SET (update, locked)
-  830    0    715   34   14622 GET
-  830    0    730   14   34298 GET (locked)
-  945  115    855  124    4013 LPUSH
-  945    0    891   36   13687 RPUSH
-  948    2    935   44   11320 LPOP
-  948    0    996   60    8253 LLEN
-  948    0   1037   41   12099 LINDEX
-  948    0   1093   56    8927 RPOP
-  948    0   1093    0    7463 cleanup
+  369  369      0    0   24385 init (9170)
+  634  265      1    1     518 include
+  635    0      2    0    3953 PDO from existing data
+  725   90      4    2     384 construct
+  725    0      4    0   45590 Starting loop tests - 1000 iterations
+  824   98    250  245    4076 SET (insert)
+  824    0    384  133    7469 SET (update)
+  824    0    422   38   26227 SET (update, locked)
+  825    0    499   76   12988 GET
+  825    0    529   29   33407 GET (locked)
+  940  115    675  146    6849 LPUSH
+  940    0    779  104    9548 RPUSH
+  942    2    891  111    8964 LPOP
+  943    0   1104  213    4690 LLEN
+  943    0   1234  129    7707 LINDEX
+  943    0   1343  108    9187 RPOP
+  944    0   1343    0    9425 cleanup
 ===== ==== ====== ==== ======= =======================================
+
 

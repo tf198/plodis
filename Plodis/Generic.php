@@ -10,13 +10,13 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	public static $purge_frequency = 0.2;
 	
 	protected $sql = array(
-		'select_key' 	=> 'SELECT item, expiry FROM plodis WHERE key=?',
-		'delete_key'	=> 'DELETE FROM plodis WHERE key=?',
-		'set_expiry'	=> 'UPDATE plodis SET expiry=? WHERE key=?',
-		'alarm'			=> 'SELECT MIN(expiry) FROM plodis WHERE expiry IS NOT NULL',
-		'expire'		=> 'DELETE FROM plodis WHERE expiry IS NOT NULL AND expiry < ?',
-		'get_keys' 		=> 'SELECT key FROM plodis',
-		'get_fuzzy_keys'=> 'SELECT key FROM plodis WHERE key LIKE ?',
+		'select_key' 	=> 'SELECT item, expiry FROM <DB> WHERE key=?',
+		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
+		'set_expiry'	=> 'UPDATE <DB> SET expiry=? WHERE key=?',
+		'alarm'			=> 'SELECT MIN(expiry) FROM <DB> WHERE expiry IS NOT NULL',
+		'expire'		=> 'DELETE FROM <DB> WHERE expiry IS NOT NULL AND expiry < ?',
+		'get_keys' 		=> 'SELECT key FROM <DB>',
+		'get_fuzzy_keys'=> 'SELECT key FROM <DB> WHERE key LIKE ?',
 	);
 	
 	private $alarm = 0;

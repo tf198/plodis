@@ -10,14 +10,12 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	public static $return_values = false;
 	
 	protected $sql = array(
-		'select_key' 	=> 'SELECT item, list_index FROM plodis WHERE key=?',
-		'insert_key' 	=> 'INSERT INTO plodis (key, item, expiry) VALUES (?, ?, ?)',
-		'update_key'	=> 'UPDATE plodis SET item=?, expiry=? WHERE key=?',
-		'delete_key'	=> 'DELETE FROM plodis WHERE key=?',
-		'incrby' 		=> 'UPDATE plodis SET item=item + ? WHERE key=?',
+		'select_key' 	=> 'SELECT item, list_index FROM <DB> WHERE key=?',
+		'insert_key' 	=> 'INSERT INTO <DB> (key, item, expiry) VALUES (?, ?, ?)',
+		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=? WHERE key=?',
+		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
+		'incrby' 		=> 'UPDATE <DB> SET item=item + ? WHERE key=?',
 	);
-	
-	private $_get;
 	
 	function set($key, $value) {
 		return $this->setex($key, $value, null);
@@ -47,10 +45,19 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		}
 	}
 	
-	function get($key, $_value=null, $_throw=true) {
+	function get($key) {
+		return $this->_get($key);
+	}
+	
+	private function _get($key, $_value=null, $_throw=true) {
 		$this->proxy->generic->gc();
 		
-		$row = $this->fetchOne('select_key', array($key));
+		//$row = $this->fetchOne('select_key', array($key));
+		
+		// optomise this one to cut out alot of the abstraction
+		$stmt = $this->proxy->db->cachedStmt($this->sql['select_key']);
+		$stmt->execute(array($key));
+		$row = $stmt->fetch(PDO::FETCH_NUM);
 		
 		if(!$row) {
 			return null;
@@ -96,7 +103,9 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	}
 	
 	function append($key, $value) {
-		throw new PlodisNotImplementedError;
+		$modified = $this->get($key) . $value;
+		$this->set($key, $modified);
+		return strlen($modified);
 	}
 	
 	function bitcount($key, $start=null, $end=null) {

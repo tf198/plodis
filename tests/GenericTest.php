@@ -121,7 +121,7 @@ class GenericTest extends BaseTest {
 		
 		$this->db->expireat('test1', time()-1);
 		
-		$this->db = new Plodis($this->db->conn);
+		$this->db = new Plodis($this->db->db->getConnection());
 		
 		$this->assertSame(null, $this->db->get('test1'));
 	}

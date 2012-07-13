@@ -6,38 +6,33 @@ define('PLODIS_BASE', dirname(dirname(__FILE__)));
 class Plodis_Proxy {
 	
 	/**
-	 * PDO object
-	 * @var PDO
+	 * Generic module
+	 * @var Plodis_Generic
 	 */
-	public $conn;
+	public $generic;
 	
 	/**
-	 * SQL to setup tables
-	 * @var multitype:string
+	 * Database manager
+	 * @var Plodis_DB
 	 */
-	private static $create_sql = array(
-		'CREATE TABLE IF NOT EXISTS plodis (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB, list_index NUMERIC, expiry NUMERIC)',
-		'CREATE INDEX IF NOT EXISTS plodis_key ON plodis (key)',
-		'CREATE INDEX IF NOT EXISTS plodis_list_index ON plodis (list_index)',
-		'CREATE INDEX IF NOT EXISTS plodis_expiry ON plodis (expiry)',
-	);
+	public $db;
 	
 	/**
-	 * SQL to optomise file based SQLite databases
-	 * @var multitype:string
+	 * Minimum LOG_LEVEL to output
+	 * @var integer
 	 */
-	private static $opt_sql = array(
-		'PRAGMA case_sensitive_like = 1',
-		'PRAGMA journal_mode = MEMORY',
-		'PRAGMA temp_store = MEMORY',
-		'PRAGMA synchronous = OFF',
+	public static $log_level = LOG_WARNING;
+	
+	public static $log_levels = array(
+		LOG_EMERG 	=> 'EMERG',
+		LOG_ALERT 	=> 'ALERT',
+		LOG_CRIT  	=> 'CRIT',
+		LOG_ERR   	=> 'ERROR',
+		LOG_WARNING => 'WARN',
+		LOG_NOTICE	=> 'NOTICE',
+		LOG_INFO	=> 'INFO',
+		LOG_DEBUG	=> 'DEBUG',
 	);
-	
-	private $stmt_cache = array();
-	
-	private static $log_level = LOG_INFO;
-	
-	private $lock_count;
 	
 	/**
 	 * @param PDO $pdo
@@ -45,34 +40,19 @@ class Plodis_Proxy {
 	 * @param boolean $opt run SQLite optomisations
 	 */
 	function __construct(PDO $pdo, $init=true, $opt=true) {
-		$this->conn = $pdo;
-		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		
-		// skip table creation if not required
-		if($init) {
-			
-			foreach(self::$create_sql as $sql) {
-				$this->conn->exec($sql);
-			}
-		}
+		$this->db = new Plodis_DB($this, $pdo);
 		
-		if($opt == true) {
-			foreach(self::$opt_sql as $sql) {
-				$this->conn->exec($sql);
-			}
-		}
+		if($init) $this->db->selectDatabase(0);
+		if($opt) $this->db->optomiseDatabase();
+		
+		// we know we need it so manually load it
+		$this->load('generic');
 		
 		// expire old items
 		$this->generic->gc();
 	}
 	
-	function cachedStmt($sql) {
-		if(!isset($this->stmt_cache[$sql])) {
-			$this->stmt_cache[$sql] = $this->conn->prepare($sql);
-			//fputs(STDERR, "CACHED {$sql}\n");
-		}
-		return $this->stmt_cache[$sql];
-	}
 	
 	/**
 	 * Use this to dynamically load Plodis Groups
@@ -82,6 +62,13 @@ class Plodis_Proxy {
 		return $this->load($name);
 	}
 	
+	/**
+	 * Load a Module onto the proxy
+	 * 
+	 * @param string $name
+	 * @param string $klass
+	 * @throws RuntimeException
+	 */
 	function load($name, $klass=null) {
 		if(isset($this->$name)) return $this->$name;
 		
@@ -95,7 +82,132 @@ class Plodis_Proxy {
 		
 		$this->$name = new $klass($this);
 		
+		$this->log("Loaded module {$title}", LOG_INFO);
 		return $this->$name;
+	}
+	
+	/**
+	 * Output a log message
+	 * Goes to STDERR if CLI, otherwise php error log
+	 * 
+	 * @param string $message
+	 * @param integer $level one of the 
+	 */
+	public function log($message, $level=LOG_INFO) {
+		if($level > self::$log_level) return;
+		
+		$message = sprintf("%6s: %s", self::$log_levels[$level], $message);
+		
+		if(PHP_SAPI == 'cli') {
+			fputs(STDERR, $message . PHP_EOL);
+		} else {
+			error_log($message);
+		}
+	}
+	
+	static function strict() {
+		Plodis_String::$return_values = true;
+		Plodis_List::$return_counts = true;
+	}
+}
+
+/**
+ * Class to keep all the backend PDO stuff hidden
+ */
+class Plodis_DB {
+	
+	/**
+	 * PDO object
+	 * @var PDO
+	 */
+	private $conn;
+	
+	/**
+	 * SQL to optomise file based SQLite databases
+	 * @var multitype:string
+	 */
+	private static $opt_sql = array(
+		'PRAGMA case_sensitive_like = 1',
+		'PRAGMA journal_mode = MEMORY',
+		'PRAGMA temp_store = MEMORY',
+		'PRAGMA synchronous = OFF',
+		//'PRAGMA auto_vacuum = NONE',
+		//'PRAGMA automatic_index = 0',
+		
+	);
+	
+	/**
+	 * SQL to setup tables
+	 * @var multitype:string
+	 */
+	private static $create_sql = array(
+		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, item BLOB, list_index NUMERIC, expiry NUMERIC)',
+		'CREATE INDEX IF NOT EXISTS <DB>_key ON <DB> (key)',
+		'CREATE INDEX IF NOT EXISTS <DB>_list_index ON <DB> (key, list_index)',
+		'CREATE INDEX IF NOT EXISTS <DB>_expiry ON <DB> (expiry)',
+	);
+	
+	private $stmt_cache = array();
+	
+	private $db_table = "plodis_0";
+	
+	private $initialised = array();
+	
+	private $lock_count;
+	
+	function __construct($proxy, $pdo) {
+		$this->proxy = $proxy;
+		$this->conn = $pdo;
+		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+	}
+	
+	function optomiseDatabase() {
+		foreach(self::$opt_sql as $sql) {
+			$this->conn->exec($sql);
+		}
+	}
+	
+	private function initTable() {
+		if(array_search($this->db_table, $this->initialised) !== false) return;
+		foreach(self::$create_sql as $sql) {
+			$sql = str_replace('<DB>', $this->db_table, $sql);
+			$this->conn->exec($sql);
+		}
+		$this->proxy->log("Initialised {$this->db_table}", LOG_INFO);
+		$this->initialised[] = $this->db_table;
+	}
+	
+	/**
+	 * Get a prepared statement, caching if possible
+	 * 
+	 * @param string $sql
+	 * @return PDOStatement
+	 */
+	function cachedStmt($sql) {
+		$sql = str_replace('<DB>', $this->db_table, $sql);
+		if(!isset($this->stmt_cache[$sql])) {
+			$this->stmt_cache[$sql] = $this->conn->prepare($sql);
+			//fputs(STDERR, "CACHED {$sql}\n");
+		}
+		return $this->stmt_cache[$sql];
+	}
+	
+	function selectDatabase($id) {
+		$this->db_table = 'plodis_' . $id;
+		$this->initTable();
+		$this->proxy->log("Selected database {$id}", LOG_INFO);
+	}
+	
+	function getDatabase() {
+		return $this->db_table;
+	}
+	
+	function getConnection() {
+		return $this->conn;
+	}
+	
+	public function close() {
+		$this->conn = null;
 	}
 	
 	public function lock() {
@@ -108,26 +220,35 @@ class Plodis_Proxy {
 	
 	public function unlock($rollback=false) {
 		$this->lock_count--;
-		
+	
 		if($rollback) {
 			$this->conn->rollBack();
 			throw new RuntimeException("Multi transaction rollback - unpredictable results possible");
 		}
-		
+	
 		if($this->lock_count == 0) {
 			$this->conn->commit();
 		}
 	}
 	
-	public function log($message, $level=LOG_INFO) {
-		if($level <= self::$log_level) {
-			fputs(STDERR, $message . "\n");
+	public function debug() {
+		$stmt = $this->cachedStmt("SELECT * FROM <DB>");
+		$stmt->execute();
+		fputs(STDERR, "\n\n");
+		while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+			$time = ($row['expiry']) ? $row['expiry'] - time() : 'inf';
+			fprintf(STDERR, "%3d %3d %3s %-10s %s\n", $row['id'], $row['list_index'], $time, $row['key'], $row['item']);
 		}
 	}
 	
-	static function strict() {
-		Plodis_String::$return_values = true;
-		Plodis_List::$return_counts = true;
+	public function explain($sql) {
+		$stmt = $this->conn->prepare('EXPLAIN QUERY PLAN ' . $sql);
+		$stmt->execute();
+		$data = $stmt->fetchAll(PDO::FETCH_COLUMN, 3);
+		fputs(STDERR, "\n-- {$sql} --\n");
+		foreach($data as $line) {
+			fputs(STDERR, $line . PHP_EOL);
+		}
 	}
 }
 

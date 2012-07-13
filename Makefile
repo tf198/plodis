@@ -1,6 +1,6 @@
 REDIS_VERSION=2_6_0
 
-REDIS_GROUPS=Generic String List Pubsub
+REDIS_GROUPS=Connection Generic String List Pubsub
 
 GROUP_INTERFACES=$(addprefix interfaces/Redis_,$(addsuffix _$(REDIS_VERSION).php,$(REDIS_GROUPS)))
 
@@ -11,3 +11,6 @@ interfaces/Redis_%_$(REDIS_VERSION).php: src/generate_interface.php src/generate
 	
 Plodis.php: src/generate_proxy.php src/generate_common.php src/redis-doc
 	php $< $(REDIS_VERSION) $(REDIS_GROUPS) > $@
+	
+%.profile:
+	php -d xdebug.profiler_enable=1 -d xdebug.profiler_output_dir=profile $*

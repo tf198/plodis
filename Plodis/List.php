@@ -20,17 +20,17 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	public static $return_counts = false;
 	
 	protected $sql = array(
-		'lpush_index'	=> 'SELECT MIN(list_index) from plodis',
-		'llen' 			=> 'SELECT COUNT(id) FROM plodis WHERE key=?',
-		'l_forward'		=> 'SELECT id, item FROM plodis WHERE key=? ORDER BY list_index, id LIMIT ? OFFSET ?',
-		'l_reverse'		=> 'SELECT id, item FROM plodis WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ? OFFSET ?',
-		'l_insert' 		=> 'INSERT INTO plodis (key, item, list_index) VALUES (?, ?, ?)',
-		'lset'			=> 'UPDATE plodis SET item=? WHERE id=?',
-		'l_key_val'		=> 'SELECT id, list_index FROM plodis WHERE key=? AND item=?',
-		'l_shift'		=> 'UPDATE plodis SET list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
-		'lrem_forward'	=> 'DELETE FROM plodis WHERE id IN (SELECT id FROM plodis WHERE key=? AND item=? ORDER BY list_index, id LIMIT ?)',
-		'lrem_reverse'	=> 'DELETE FROM plodis WHERE id IN (SELECT id FROM plodis WHERE key=? AND item=? ORDER BY list_index DESC, id DESC LIMIT ?)',
-		'list_del' 		=> 'DELETE FROM plodis WHERE id=?',
+		'lpush_index'	=> 'SELECT MIN(list_index) FROM <DB>',
+		'llen' 			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
+		'l_forward'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY list_index, id LIMIT ? OFFSET ?',
+		'l_reverse'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY list_index DESC, id DESC LIMIT ? OFFSET ?',
+		'l_insert' 		=> 'INSERT INTO <DB> (key, item, list_index) VALUES (?, ?, ?)',
+		'lset'			=> 'UPDATE <DB> SET item=? WHERE id=?',
+		'l_key_val'		=> 'SELECT id, list_index FROM <DB> WHERE key=? AND item=?',
+		'l_shift'		=> 'UPDATE <DB> SET list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
+		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY list_index, id LIMIT ?)',
+		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY list_index DESC, id DESC LIMIT ?)',
+		'list_del' 		=> 'DELETE FROM <DB> WHERE id=?',
 	);
 	
 	#ifdef REDIS_1_0_0
@@ -113,21 +113,24 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function rpush($key, $values) {
-		if(!is_array($values)) $values = array_slice(func_get_args(), 1);
-	
+		#$this->proxy->db->lock();
+		
+		#$id = $this->fetchOne('rpush_index');
+		#$id = ($id) ? $id[0] : 0;
+		
 		$stmt = $this->getStmt('l_insert');
 		foreach($values as $value) {
 			$stmt->execute(array($key, $value, 0));
 		}
+		
+		#$this->proxy->db->unlock();
 	
 		return self::$return_counts ? $this->llen($key) : -1;
 	}
 	
 	function lpush($key, $values) {
-		if(!is_array($values)) $values = array_slice(func_get_args(), 1);
-	
 		// have to transaction this
-		$this->proxy->lock();
+		$this->proxy->db->lock();
 	
 		// find the lowest id
 		$id = $this->fetchOne('lpush_index');
@@ -138,7 +141,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			$stmt->execute(array($key, $value, $id--));
 		}
 	
-		$this->proxy->unlock();
+		$this->proxy->db->unlock();
 	
 		return self::$return_counts ? $this->llen($key) : -1;
 	}
@@ -151,32 +154,41 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		return $this->_pop($key, 'l_reverse');
 	}
 	
-	private function _pop($key, $type, $wait=false) {
-		$pop = $this->getStmt($type);
-		$del = $this->getStmt('list_del');
+	private $_pop_stmt;
+	private $_del_stmt;
 	
-		// do everything in an optomised lock
+	private function _pop($key, $type, $timeout=-1) {
+	
 		$us = self::$poll_frequency * 1000000;
 	
+		// cache our statments locally as this one is a pig :)
+		if(!isset($this->_pop_stmt)) {
+			$this->_pop_stmt = $this->proxy->db->cachedStmt($this->sql[$type]);
+			$this->_del_stmt = $this->proxy->db->cachedStmt($this->sql['list_del']);
+		}
+		
 		while(true) {
-			$this->proxy->lock();
-			$pop->execute(array($key, 1, 0));
-			$result = $pop->fetch(PDO::FETCH_NUM);
-			$pop->closeCursor();
+			$this->proxy->db->lock();
+			$this->_pop_stmt->execute(array($key, 1, 0));
+			$result = $this->_pop_stmt->fetch(PDO::FETCH_NUM);
 			if($result) {
 				try {
-					$del->execute(array($result[0]));
+					$this->_del_stmt->execute(array($result[0]));
 				} catch(PDOException $e) {
 					$this->proxy->log("Unable to remove list item: " . $e->getMessage(), LOG_WARNING);
 					$result = null;
 				}
 			}
-			$this->proxy->unlock();
-			if(!$result && $wait) {
-				usleep($us);
-			} else {
-				break;
-			}
+			$this->proxy->db->unlock();
+			
+			if($timeout < 0) break;
+			if($result) break;
+			
+			usleep($us);
+			
+			if($timeout == 0) continue;
+			$timeout -= self::$poll_frequency;
+			if($timeout == 0) break; // make sure our descending timer doesn't become indefinate
 		}
 	
 		return ($result) ? $result[1] : null;
@@ -191,22 +203,22 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	#ifdef REDIS_2_0_0
 	function blpop($key, $timeout) {
-		return $this->_pop($key, 'l_forward', true);
+		return $this->_pop($key, 'l_forward', $timeout);
 	}
 	
 	function brpop($key, $timeout) {
-		return $this->_pop($key, 'l_reverse', true);
+		return $this->_pop($key, 'l_reverse', $timeout);
 	}
 	#endif
 	
 	#ifdef REDIS_2_2_0
 	function linsert($key, $pos, $pivot, $value) {
 		// make atomic
-		$this->proxy->conn->beginTransaction();
+		$this->proxy->db->lock();
 	
 		$item = $this->fetchOne('l_key_val', array($key, $pivot));
 		if(!$item) {
-			$this->proxy->conn->commit();
+			$this->proxy->db->unlock(true);
 			return -1;
 		}
 	
@@ -215,7 +227,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		$this->fetchOne('l_shift', $item);
 		$this->fetchOne('l_insert', array($key, $value, $item[1]));
 	
-		$this->proxy->conn->commit();
+		$this->proxy->db->unlock();
 	
 		return self::$return_counts ? $this->llen($key) : -1;
 	}

@@ -25,7 +25,7 @@ class StringTest extends BaseTest {
 		$this->db->set('test1', null);
 		$this->db->set('test2', 1);
 		$this->db->set('test3', 'two');
-		$this->db->set('test4', json_encode($this));
+		$this->db->set('test4', json_encode(new stdClass()));
 		
 		$this->assertThrows('RuntimeException: Cannot convert object to string', $this->db, 'set', 'test5', $this);
 		$this->assertThrows('RuntimeException: Cannot convert array to string', $this->db, 'set', 'test5', array(1,2,3));
@@ -65,15 +65,16 @@ class StringTest extends BaseTest {
 		//var_dump($this->db->get('test2'));
 		$this->markTestIncomplete();
 	}
-	/*
+	
 	function testAppend() {
 		$this->db->set('test1', 'one');
 		
 		// normal behaviour
 		$this->assertSame(6, $this->db->append('test1', 'two'));
+		$this->assertSame('onetwo', $this->db->get('test1'));
 		
 		// creation
 		$this->assertSame(3, $this->db->append('test2', 'two'));
+		$this->assertSame('two', $this->db->get('test2'));
 	}
-	*/
 }

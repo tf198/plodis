@@ -17,7 +17,7 @@ class Plodis_Group {
 		if(!isset($this->sql[$which])) throw new RuntimeException("No SQL for '{$which}'");
 		$sql = $this->sql[$which];
 		
-		return $this->proxy->cachedStmt($sql);
+		return $this->proxy->db->cachedStmt($sql);
 	}
 	
 	protected function fetchOne($which, $params=array()) {

@@ -10,7 +10,7 @@ require_once "Plodis/Proxy.php";
  * Proxy for Redis version 2.6.0 methods.  Dispatches calls to the group class
  * This class is automatically generated from the Redis docs on github.
  *
- * Included modules: generic, string, list, pubsub
+ * Included modules: connection, generic, string, list, pubsub
  *
  * @link https://github.com/antirez/redis-doc
  * @package Plodis
@@ -39,6 +39,21 @@ class Plodis extends Plodis_Proxy {
      */
     public function append($key, $value) {
         return $this->string->append($key, $value);
+    }
+
+    /**
+     * Authenticate to the server
+     *
+     * @since 1.0.0
+     * @api
+     * @group connection
+     * @link http://redis.io/commands/auth AUTH
+     *
+     * @param string $password
+     * @return null no documentation available
+     */
+    public function auth($password) {
+        return $this->connection->auth($password);
     }
 
     /**
@@ -185,6 +200,21 @@ class Plodis extends Plodis_Proxy {
      */
     public function dump($key) {
         return $this->generic->dump($key);
+    }
+
+    /**
+     * Echo the given string
+     *
+     * @since 1.0.0
+     * @api
+     * @group connection
+     * @link http://redis.io/commands/echo ECHO
+     *
+     * @param string $message
+     * @return null no documentation available
+     */
+    public function _echo($message) {
+        return $this->connection->_echo($message);
     }
 
     /**
@@ -673,6 +703,21 @@ class Plodis extends Plodis_Proxy {
     }
 
     /**
+     * Ping the server
+     *
+     * @since 1.0.0
+     * @api
+     * @group connection
+     * @link http://redis.io/commands/ping PING
+     *
+     * @return null
+     *
+     */
+    public function ping() {
+        return $this->connection->ping();
+    }
+
+    /**
      * Set the value and expiration in milliseconds of a key
      *
      * @since 2.6.0
@@ -750,6 +795,20 @@ class Plodis extends Plodis_Proxy {
     public function punsubscribe($pattern=null) {
         if(!is_array($pattern)) $pattern = array_slice(func_get_args(), 0);
         return $this->pubsub->punsubscribe($pattern);
+    }
+
+    /**
+     * Close the connection
+     *
+     * @since 1.0.0
+     * @api
+     * @group connection
+     * @link http://redis.io/commands/quit QUIT
+     *
+     * @return null always OK.
+     */
+    public function quit() {
+        return $this->connection->quit();
     }
 
     /**
@@ -877,6 +936,21 @@ class Plodis extends Plodis_Proxy {
      */
     public function rpushx($key, $value) {
         return $this->list->rpushx($key, $value);
+    }
+
+    /**
+     * Change the selected database for the current connection
+     *
+     * @since 1.0.0
+     * @api
+     * @group connection
+     * @link http://redis.io/commands/select SELECT
+     *
+     * @param integer $index
+     * @return null no documentation available
+     */
+    public function select($index) {
+        return $this->connection->select($index);
     }
 
     /**

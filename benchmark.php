@@ -2,7 +2,7 @@
 $GLOBALS['bench_mem'] = 0;
 $GLOBALS['bench_ts_start'] = microtime(true);
 $GLOBALS['bench_ts'] = microtime(true);
-fprintf(STDERR, <<<EOF
+fprintf(STDOUT, <<<EOF
 ===== ==== ====== ==== ======= =======================================
 Mem (KB)   Time (ms)     Ops   Description
 ---------- ----------- ------- ---------------------------------------
@@ -12,7 +12,7 @@ Total Step Total  Step  ops/s
 EOF
 		);
 
-define('BENCH_DATA', 'benchmark.sq3');
+define('BENCH_DATA', 'data/benchmark.sq3');
 define('LOOP_SIZE', 500);
 
 function bench($message, $count=1) {
@@ -20,7 +20,7 @@ function bench($message, $count=1) {
 	$mem = memory_get_usage();
 	
 	$ops = $count / ($now-$GLOBALS['bench_ts']);
-	fprintf(STDERR, "%5d %4d %6d %4d %7d %s\n", $mem/1024, ($mem-$GLOBALS['bench_mem'])/1024, ($now-$GLOBALS['bench_ts_start'])*1000, ($now-$GLOBALS['bench_ts'])*1000, $ops, $message);
+	fprintf(STDOUT, "%5d %4d %6d %4d %7d %s\n", $mem/1024, ($mem-$GLOBALS['bench_mem'])/1024, ($now-$GLOBALS['bench_ts_start'])*1000, ($now-$GLOBALS['bench_ts'])*1000, $ops, $message);
 	
 	$GLOBALS['bench_ts'] = $now;
 	$GLOBALS['bench_mem'] = $mem;
@@ -59,11 +59,11 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('SET (update)', LOOP_SIZE);
 
-$db->lock();
+$db->db->lock();
 for($i=0; $i<LOOP_SIZE; $i++) {
 	$db->set('item_' . $i, $i);
 }
-$db->unlock();
+$db->db->unlock();
 bench('SET (update, locked)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
@@ -71,11 +71,11 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('GET', LOOP_SIZE);
 
-$db->lock();
+$db->db->lock();
 for($i=0; $i<LOOP_SIZE; $i++) {
 	assert($db->get('item_' . $i) == $i);
 }
-$db->unlock();
+$db->db->unlock();
 bench('GET (locked)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
@@ -112,4 +112,4 @@ bench('RPOP', LOOP_SIZE);
 unset($pdo, $db);
 @unlink(BENCH_DATA);
 bench('cleanup');
-fprintf(STDERR, "===== ==== ====== ==== ======= =======================================\n");
+fprintf(STDOUT, "===== ==== ====== ==== ======= =======================================\n");

@@ -14,12 +14,13 @@ one or two changes - will update when I've tested...
 
 Current Status
 ==============
-Built against Redis 2.6.0 with certain modules disabled and a few gaps:
+Built from Redis 2.6.0 API with certain modules disabled and a few gaps.  Wherever a method is not implemented
+it will throw a ``PlodisNotImplementedError``.
 
 :Generic (Keys):
    Partial coverage. Need to finish 2.0.0.
 :Strings:
-   Full coverage up to 2.0.0 except APPEND. Methods from 2.6.0 present as stubs.
+   Full coverage up to 2.0.0.
 :Hashes:
    Not implemented.
 :List:
@@ -31,11 +32,12 @@ Built against Redis 2.6.0 with certain modules disabled and a few gaps:
 :Pub/Sub:
    Full 2.6.0 coverage except PSUBSCRIBE and PUNSUBSCRIBE
 :Transaction:
-   Background implementation.
+   Background implementation. Currently has ``lock()`` and ``unlock()`` methods available
+   on the ``Plodis::db`` module though I'll probably make this API compatible very soon.
 :Scripting:
-   Not implemented.
+   Not implemented.  Should be possible with the PHP Lua extension though...
 :Connection:
-   Not implemented.
+   Full coverage, though AUTH performs no actual authentication.
 :Server:
    Not implemented
 
@@ -59,14 +61,23 @@ Caveats
    this is implemented as mailbox fanout using the Lists module - should be fine for everyday work but dont try and build a **twitter** with
    it.  Might look at reference fanout in the future: http://www.scribd.com/doc/16952419/Building-scalable-complex-apps-on-App-Engine
 
+Implementation
+==============
+Each Plodis instance is backed by a single SQLite data file with as many optomisations turned on as possible so there is the potential for data
+loss in the event of a crash (it should be possible to set some guarantees using the Server module, its just a file after all, but I haven't got round
+to it yet.
+
 TODO
 ====
 
-* Finish current modules
+* Finish Generic, String and List modules
+* Implement multiple databases (separate table per database) 
 * Finish preprocessor directives so we can compile for a specific version
 * Make sure the test suite is complete (return types?)
 * Move behavior switches from classes to CONFIG GET
 * Implement other modules
+* Replace transactions with savepoints
+* Other optomisations (VACUUM?)
 * Figure out why I spent two days cloning something that was already excellent :-)
    
 Performance

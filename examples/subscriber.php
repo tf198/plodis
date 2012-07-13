@@ -6,7 +6,7 @@ $plodis = new Plodis(new PDO('sqlite:data/testing.sq3'));
 $plodis->subscribe('test-channel');
 
 while(true) {
-	$item = $plodis->receive();
+	$item = $plodis->pubsub->bpoll();
 	fwrite(STDOUT, "GOT {$item}\n");
 	if($item == 'quit') break;
 }

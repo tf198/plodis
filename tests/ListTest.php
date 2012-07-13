@@ -18,6 +18,10 @@ class ListTest extends BaseTest {
 		
 		// check result
 		$this->assertSame(array('one', 'two', 'three', 'four', 'five', 'six', 'seven'), $this->db->lrange('test1', 0, -1));
+		
+		$this->db->linsert('test1', 'BEFORE', 'four', 'eight');
+		$this->db->rpush('test1', 'nine');
+		$this->assertSame(array('one', 'two', 'three', 'eight', 'four', 'five', 'six', 'seven', 'nine'), $this->db->lrange('test1', 0, -1));
 	}
 	
 	function testLPush() {
@@ -83,19 +87,24 @@ class ListTest extends BaseTest {
 	}
 	
 	function testLInsert() {
-		$this->db->rpush('test1', 'one', 'two', 'three', 'four');
+		$this->db->rpush('test1', 'one', 'two', 'three', 'three', 'four');
 		
 		$this->assertSame(-1, $this->db->linsert('test1', 'before', 'two', 'five'));
-		$this->assertSame(array('one', 'five', 'two', 'three', 'four'), $this->db->lrange('test1', 0, -1));
+		$this->assertSame(array('one', 'five', 'two', 'three', 'three', 'four'), $this->db->lrange('test1', 0, -1));
 		
-		$this->assertSame(-1, $this->db->linsert('test1', 'after', 'three', 'six'));
-		$this->assertSame(array('one', 'five', 'two', 'three', 'six', 'four'), $this->db->lrange('test1', 0, -1));
+		$this->db->linsert('test1', 'after', 'three', 'six');
+		$this->assertSame(array('one', 'five', 'two', 'three', 'three', 'six', 'four'), $this->db->lrange('test1', 0, -1));
 		
-		$this->assertSame(-1, $this->db->linsert('test1', 'before', 'one', 'seven'));
-		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'six', 'four'), $this->db->lrange('test1', 0, -1));
+		$this->db->linsert('test1', 'before', 'one', 'seven');
+		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'three', 'six', 'four'), $this->db->lrange('test1', 0, -1));
 		
-		$this->assertSame(-1, $this->db->linsert('test1', 'after', 'six', 'eight'));
-		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'six', 'eight', 'four'), $this->db->lrange('test1', 0, -1));
+		$this->db->linsert('test1', 'after', 'six', 'eight');
+		$this->assertSame(array('seven', 'one', 'five', 'two', 'three', 'three', 'six', 'eight', 'four'), $this->db->lrange('test1', 0, -1));
+		
+		// check that push commands still end up in the right place
+		$this->db->rpush('test1', 'nine');
+		$this->db->lpush('test1', 'ten');
+		$this->assertSame(array('ten', 'seven', 'one', 'five', 'two', 'three', 'three', 'six', 'eight', 'four', 'nine'), $this->db->lrange('test1', 0, -1));
 	}
 	
 	function testLRem() {

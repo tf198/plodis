@@ -71,7 +71,6 @@ TODO
 ====
 
 * Finish Generic, String and List modules
-* Implement multiple databases (separate table per database) 
 * Finish preprocessor directives so we can compile for a specific version
 * Make sure the test suite is complete (return types?)
 * Move behavior switches from classes to CONFIG GET
@@ -84,10 +83,11 @@ Performance
 ===========
 
 I thought it would be rubbish but actually it's not bad using a dedicated SQLite database.  These are on my AMD Phenom II x6 3.20Ghz with each loop
-set at 500.  You can expect ~8K SETs per sec and ~14K GETs in standard mode but if you lock the database you can get ~32K for both.
-List operations are slower with PUSH around ~6-9K, and POP (~1-2K) is particularly bad (database optomisation needed...) but all can be speeded up by locking the database. 
-As you can see the memory footprint for the package is well under 512K - no need to change ``memory_limit`` in your ``php.ini``.  If you start running
-into latency issues switch to a Redis server! :-)
+set at 500.  You can expect ~4-10K SETs per sec and ~14K GETs in standard mode but if you lock the database you can get 2-3 times throughput.
+List operations are optomised for RPUSH/LPOP (ie FIFO) at around ~11-13K though RPOP isn't too bad if you want a stack - just avoid LPUSH if possible.
+As you can see the memory footprint for the package is around 600K - no need to change ``memory_limit`` in your ``php.ini``.  
+
+Just rememeber that if performance becomes that important to you then you should probably shift to a Redis server! :-)
 
 ===== ==== ====== ==== ======= =======================================
 Mem (KB)   Time (ms)     Ops   Description
@@ -95,23 +95,24 @@ Mem (KB)   Time (ms)     Ops   Description
 Total Step Total  Step  ops/s
 ===== ==== ====== ==== ======= =======================================
   370  370      0    0   35848 init
-  371    0      1    0    1025 PDO creating from new
-  584  212      2    1     628 include
-  627   43    410  407       2 construct (including tables)
-  627    0    410    0   11881 free
-  627    0    411    1     708 PDO from existing file
-  630    3    414    2     396 construct (if not exists)
-  630    0    414    0   13486 Starting loop tests - 500 iterations
-  654   23    528  113    4387 SET (insert)
-  654    0    574   45   10910 SET (update)
-  654    0    589   15   31960 SET (update, locked)
-  655    0    625   35   14089 GET
-  655    0    640   15   32940 GET (locked)
-  736   80    719   78    6337 LPUSH
-  736    0    773   53    9280 RPUSH
-  738    2   1454  681     733 LPOP
-  739    0   1536   81    6144 LLEN
-  739    0   2091  555     900 LINDEX
-  741    1   2374  283    1765 RPOP
-  741    0   2375    0   11096 cleanup
+  371    0      1    1     897 PDO creating from new
+  637  265      3    2     498 include
+  727   90    484  481       2 construct (including tables)
+  727    0    484    0   10205 free
+  727    0    488    3     250 PDO from existing file
+  731    3    491    3     317 construct (if not exists)
+  731    0    491    0   12336 Starting loop tests - 500 iterations
+  829   98    616  124    4010 SET (insert)
+  829    0    664   47   10489 SET (update)
+  829    0    681   17   28715 SET (update, locked)
+  830    0    715   34   14622 GET
+  830    0    730   14   34298 GET (locked)
+  945  115    855  124    4013 LPUSH
+  945    0    891   36   13687 RPUSH
+  948    2    935   44   11320 LPOP
+  948    0    996   60    8253 LLEN
+  948    0   1037   41   12099 LINDEX
+  948    0   1093   56    8927 RPOP
+  948    0   1093    0    7463 cleanup
 ===== ==== ====== ==== ======= =======================================
+

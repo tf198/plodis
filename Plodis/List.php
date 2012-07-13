@@ -27,7 +27,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		'l_insert' 		=> 'INSERT INTO <DB> (key, item, list_index) VALUES (?, ?, ?)',
 		'lset'			=> 'UPDATE <DB> SET item=? WHERE id=?',
 		'l_key_val'		=> 'SELECT id, list_index FROM <DB> WHERE key=? AND item=?',
-		'l_shift'		=> 'UPDATE <DB> SET list_index = list_index+1 WHERE id>? AND list_index>=?', // creates a space after the target item
+		'l_shift'		=> 'UPDATE <DB> SET list_index = list_index-1 WHERE key=? AND id<=? OR list_index<?', // creates a space before the target item
 		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY list_index, id LIMIT ?)',
 		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY list_index DESC, id DESC LIMIT ?)',
 		'list_del' 		=> 'DELETE FROM <DB> WHERE id=?',
@@ -113,17 +113,10 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function rpush($key, $values) {
-		#$this->proxy->db->lock();
-		
-		#$id = $this->fetchOne('rpush_index');
-		#$id = ($id) ? $id[0] : 0;
-		
 		$stmt = $this->getStmt('l_insert');
 		foreach($values as $value) {
 			$stmt->execute(array($key, $value, 0));
 		}
-		
-		#$this->proxy->db->unlock();
 	
 		return self::$return_counts ? $this->llen($key) : -1;
 	}
@@ -216,16 +209,22 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		// make atomic
 		$this->proxy->db->lock();
 	
-		$item = $this->fetchOne('l_key_val', array($key, $pivot));
-		if(!$item) {
+		$items = $this->fetchAll('l_key_val', array($key, $pivot));
+		if(!$items) {
 			$this->proxy->db->unlock(true);
 			return -1;
 		}
-	
-		if($pos == 'before') $item[0]--;
-	
-		$this->fetchOne('l_shift', $item);
-		$this->fetchOne('l_insert', array($key, $value, $item[1]));
+		
+		if(strtolower($pos) == 'before') {
+			$items[0][0]--;
+		} else {
+			$items = array_reverse($items);
+		}
+		$this->fetchOne('l_shift', array($key, $items[0][0], $items[0][1]));
+		
+		// go in at same index as shifted items
+		$items[0][1]--;
+		$this->fetchOne('l_insert', array($key, $value, $items[0][1]));
 	
 		$this->proxy->db->unlock();
 	

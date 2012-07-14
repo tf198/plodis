@@ -181,26 +181,20 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		return $this->_pop($key, 'l_reverse');
 	}
 	
-	private $_pop_stmt;
-	private $_del_stmt;
-	
 	private function _pop($key, $type, $timeout=-1) {
 	
 		$us = self::$poll_frequency * 1000000;
 	
-		// cache our statments locally as this one is a pig :)
-		if(!isset($this->_pop_stmt)) {
-			$this->_pop_stmt = $this->proxy->db->cachedStmt($this->sql[$type]);
-			$this->_del_stmt = $this->proxy->db->cachedStmt($this->sql['list_del']);
-		}
+		$pop = $this->proxy->db->cachedStmt($this->sql[$type]);
+		$del = $this->proxy->db->cachedStmt($this->sql['list_del']);
 		
 		while(true) {
 			$this->proxy->db->lock();
-			$this->_pop_stmt->execute(array($key, 1, 0));
-			$result = $this->_pop_stmt->fetch(PDO::FETCH_NUM);
+			$pop->execute(array($key, 1, 0));
+			$result = $pop->fetch(PDO::FETCH_NUM);
 			if($result) {
 				try {
-					$this->_del_stmt->execute(array($result[0]));
+					$del->execute(array($result[0]));
 				} catch(PDOException $e) {
 					$this->proxy->log("Unable to remove list item: " . $e->getMessage(), LOG_WARNING);
 					$result = null;

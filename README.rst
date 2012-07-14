@@ -2,15 +2,19 @@ Plodis
 ------
 
 \ **P**\ HP **Lo**\ cal **Di**\ ctionary **S**\ ervice implements the most commonly used 
-Redis functions using a PDO backend.  Intended for prototyping where you
+Redis_ functions using a PDO backend.  Intended for prototyping where you
 dont have a Redis server available or deployment to hosted servers where unable to install Redis.
 
-Even if you are not planning on using Redis in production, the redis API makes it trivial to
+Even if you are not planning on using Redis in production, the `Redis API`_ makes it trivial to
 implement queues (IPC, background processing etc) and pub/sub (webchat anyone?) so it stands alone as
 a package quite happily.
 
-In theory you should be able to take an application running Plodis and change to Predis with only
+In theory you should be able to take an application running Plodis and change to Predis_ with only
 one or two changes - will update when I've tested...
+
+:: _Redis: http://redis.io
+:: _Predis: https://github.com/nrk/predis/
+:: _Redis Api: http://redis.io/commands
 
 Current Status
 ==============
@@ -70,7 +74,7 @@ loss in the event of a crash (it should be possible to set some guarantees using
 to it yet.
 
 ======= ======= ======= ======= ======= =======
-        String  List    Hash    Set     SSet
+        String  List    Hash    Set     ZSet
 ======= ======= ======= ======= ======= =======
 id      AUTO    AUTO    AUTO    AUTO    AUTO
 key     key     key     key     key     key

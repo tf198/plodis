@@ -259,4 +259,16 @@ class ListTest extends BaseTest {
 		$this->db->set('test1', 'one');
 		$this->assertSame('one', $this->db->get('test1'));
 	}
+	
+	function testLRPop() {
+		// alternating L R pop ops
+		$this->db->rpush('test1', 'a', 'b', 'c', 'd', 'e');
+		
+		$this->assertSame('a', $this->db->lpop('test1'));
+		$this->assertSame('e', $this->db->rpop('test1'));
+		$this->assertSame('b', $this->db->lpop('test1'));
+		$this->assertSame('d', $this->db->rpop('test1'));
+		$this->assertSame('c', $this->db->lpop('test1'));
+		$this->assertSame(null, $this->db->rpop('test1'));
+	}
 }

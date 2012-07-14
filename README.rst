@@ -6,15 +6,15 @@ Redis_ functions using a PDO backend.  Intended for prototyping where you
 dont have a Redis server available or deployment to hosted servers where unable to install Redis.
 
 Even if you are not planning on using Redis in production, the `Redis API`_ makes it trivial to
-implement queues (IPC, background processing etc) and pub/sub (webchat anyone?) so it stands alone as
-a package quite happily.
+implement queues (IPC, background processing etc), pub/sub (webchat anyone?) and auto-expiring data
+(output caching) so it stands alone as a package quite happily.
 
 In theory you should be able to take an application running Plodis and change to Predis_ with only
 one or two changes - will update when I've tested...
 
-:: _Redis: http://redis.io
-:: _Predis: https://github.com/nrk/predis/
-:: _Redis Api: http://redis.io/commands
+.. _Redis: http://redis.io
+.. _Predis: https://github.com/nrk/predis/
+.. _Redis Api: http://redis.io/commands
 
 Current Status
 ==============
@@ -26,7 +26,7 @@ it will throw a ``PlodisNotImplementedError``.
 :Strings:
    Full coverage up to 2.0.0.
 :Hashes:
-   Not implemented.
+   Full 2.6.0 coverage.
 :List:
    Full 2.6.0 coverage.
 :Sets:
@@ -73,15 +73,15 @@ Each Plodis instance is backed by a single SQLite data file with as many optomis
 loss in the event of a crash (it should be possible to set some guarantees using the Server module, its just a file after all, but I haven't got round
 to it yet.
 
-======= ======= ======= ======= ======= =======
-        String  List    Hash    Set     ZSet
-======= ======= ======= ======= ======= =======
-id      AUTO    AUTO    AUTO    AUTO    AUTO
-key     key     key     key     key     key
-field   NULL    NULL    field   value   value
-weight  NULL	<=0     1       NULL    <=0
-item    value   value   value   NULL    NULL
-======= ======= ======= ======= ======= =======
+=======  =======  =======  =======  =======  =======
+         String   List     Hash     Set      ZSet
+=======  =======  =======  =======  =======  =======
+id       AUTO     AUTO     AUTO     AUTO     AUTO
+key      key      key      key      key      key
+field    NULL     NULL     field    value    value
+weight   NULL     -ve      1        NULL     -ve
+item     value    value    value    NULL     NULL
+=======  =======  =======  =======  =======  =======
 
 TODO
 ====

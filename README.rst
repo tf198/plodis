@@ -91,7 +91,6 @@ TODO
 * Make sure the test suite is complete (return types?)
 * Move behavior switches from classes to CONFIG GET
 * Implement other modules
-* Replace transactions with savepoints
 * Other optomisations (VACUUM?)
 * Figure out why I spent two days cloning something that was already excellent :-)
    

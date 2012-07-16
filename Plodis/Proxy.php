@@ -49,11 +49,13 @@ class Plodis_Proxy {
 	);
 	
 	/**
-	 * @param PDO $pdo
+	 * @param PDO|string $pdo
 	 * @param boolean $init create tables if neccesary
 	 * @param boolean $opt run SQLite optomisations
 	 */
-	function __construct(PDO $pdo, $init=true, $opt=true) {
+	function __construct($pdo, $init=true, $opt=true) {
+		
+		if(is_string($pdo)) $pdo = new PDO('sqlite:' . $pdo);
 		
 		$this->db = new Plodis_DB($this, $pdo);
 		
@@ -228,6 +230,7 @@ class Plodis_DB {
 	public function lock() {
 		if($this->lock_count == 0) {
 			$this->conn->beginTransaction();
+			//$this->proxy->log("Started transaction", LOG_WARNING);
 		} else {
 			$savepoint = "LOCK_" . $this->lock_count;
 			$this->conn->exec("SAVEPOINT {$savepoint}");
@@ -241,17 +244,18 @@ class Plodis_DB {
 		
 		if($this->lock_count == 0) {
 			if($rollback) {
+				$this->proxy->log("Rolling back transaction", LOG_INFO);
 				$this->conn->rollBack();
-				$this->proxy->log("Rolled back entire transaction", LOG_WARNING);
 			} else {
+				//$this->proxy->log("Commiting transaction", LOG_WARNING);
 				$this->conn->commit();
 			}
 		} else {
 			$savepoint = "LOCK_" . $this->lock_count;
 		
 			if($rollback) {
-				$this->conn->exec("ROLLBACK {$savepoint}");
-				$this->proxy->log("Rolled back to {$savepoint}", LOG_WARNING);
+				$this->proxy->log("Rolling back to {$savepoint}", LOG_INFO);
+				$this->conn->exec("ROLLBACK TO {$savepoint}");
 			}
 	
 			$this->conn->exec("RELEASE {$savepoint}");

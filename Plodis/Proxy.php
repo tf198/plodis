@@ -226,23 +226,37 @@ class Plodis_DB {
 	}
 	
 	public function lock() {
-		$savepoint = "LOCK_" . $this->lock_count;
-		$this->conn->exec("SAVEPOINT {$savepoint}");
-		//$this->proxy->log("Created savepoint {$savepoint}", LOG_WARNING);
+		if($this->lock_count == 0) {
+			$this->conn->beginTransaction();
+		} else {
+			$savepoint = "LOCK_" . $this->lock_count;
+			$this->conn->exec("SAVEPOINT {$savepoint}");
+			//$this->proxy->log("Created savepoint {$savepoint}", LOG_WARNING);
+		}
 		$this->lock_count++;
 	}
 	
 	public function unlock($rollback=false) {
 		$this->lock_count--;
-		$savepoint = "LOCK_" . $this->lock_count;
 		
-		if($rollback) {
-			$this->conn->exec("ROLLBACK {$savepoint}");
-			$this->proxy->log("Rolled back to {$savepoint}", LOG_WARNING);
-		}
+		if($this->lock_count == 0) {
+			if($rollback) {
+				$this->conn->rollBack();
+				$this->proxy->log("Rolled back entire transaction", LOG_WARNING);
+			} else {
+				$this->conn->commit();
+			}
+		} else {
+			$savepoint = "LOCK_" . $this->lock_count;
+		
+			if($rollback) {
+				$this->conn->exec("ROLLBACK {$savepoint}");
+				$this->proxy->log("Rolled back to {$savepoint}", LOG_WARNING);
+			}
 	
-		$this->conn->exec("RELEASE {$savepoint}");
-		//$this->proxy->log("Released {$savepoint}", LOG_WARNING);
+			$this->conn->exec("RELEASE {$savepoint}");
+			//$this->proxy->log("Released {$savepoint}", LOG_WARNING);
+		}
 	}
 	
 	public function debug($key) {

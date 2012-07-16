@@ -168,7 +168,7 @@ class Plodis_DB {
 	
 	private $initialised = array();
 	
-	private $lock_count;
+	private $lock_count = 0;
 	
 	function __construct($proxy, $pdo) {
 		$this->proxy = $proxy;
@@ -226,28 +226,27 @@ class Plodis_DB {
 	}
 	
 	public function lock() {
-		if($this->lock_count == 0) {
-			$this->conn->beginTransaction();
-			$this->rollback = false;
-		}
+		$savepoint = "LOCK_" . $this->lock_count;
+		$this->conn->exec("SAVEPOINT {$savepoint}");
+		//$this->proxy->log("Created savepoint {$savepoint}", LOG_WARNING);
 		$this->lock_count++;
 	}
 	
 	public function unlock($rollback=false) {
 		$this->lock_count--;
-	
+		$savepoint = "LOCK_" . $this->lock_count;
+		
 		if($rollback) {
-			$this->conn->rollBack();
-			throw new RuntimeException("Multi transaction rollback - unpredictable results possible");
+			$this->conn->exec("ROLLBACK {$savepoint}");
+			$this->proxy->log("Rolled back to {$savepoint}", LOG_WARNING);
 		}
 	
-		if($this->lock_count == 0) {
-			$this->conn->commit();
-		}
+		$this->conn->exec("RELEASE {$savepoint}");
+		//$this->proxy->log("Released {$savepoint}", LOG_WARNING);
 	}
 	
-	public function debug() {
-		$stmt = $this->cachedStmt("SELECT * FROM <DB> ORDER BY field, id");
+	public function debug($key) {
+		$stmt = $this->cachedStmt("SELECT * FROM <DB> WHERE key=? ORDER BY field, id");
 		$stmt->execute();
 		fputs(STDERR, "\n\n");
 		while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {

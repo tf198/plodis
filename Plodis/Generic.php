@@ -130,11 +130,32 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	}
 	
 	function rename($key, $newkey) {
+		if($key == $newkey) throw new PlodisError("Old and new keys are the same");
+		
+		$this->proxy->db->lock();
+		
+		$type = $this->type($newkey);
+		if($type !== null) {
+			$this->del(array($newkey));
+		}
 		$c = $this->executeStmt('rename', array($newkey, $key));
+		if(!$c) {
+			$this->proxy->db->unlock(true);
+			throw new PlodisError("Key does not exist");
+		}
+		$this->proxy->db->unlock();
 	}
 	
 	function renamenx($key, $newkey) {
-		throw new PlodisNotImplementedError;
+		$this->proxy->db->lock();
+		$type = $this->type($newkey);
+		if($type !== null) {
+			$result = 0;
+		} else {
+			$result = $this->rename($key, $newkey);
+		}
+		$this->proxy->db->unlock();
+		return $result; 
 	}
 	
 	function restore($key, $ttl, $serialized_value) {

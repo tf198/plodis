@@ -168,6 +168,20 @@ class GenericTest extends BaseTest {
 		
 		$this->db->rename('test3', 'test6');
 		$this->assertSame('five', $this->db->hget('test6', 'test'));
+		
+		$this->assertThrows('PlodisError: Key does not exist', $this->db, 'rename', 'test7', 'test8');
+	}
+	
+	function testRenameNX() {
+		$this->db->set('test1', 'one');
+		$this->db->renamenx('test1', 'test2');
+		$this->assertSame('one', $this->db->get('test2'));
+		
+		$this->db->set('test3', 'two');
+		
+		$this->db->renamenx('test2', 'test3');
+		$this->assertSame('one', $this->db->get('test2'));
+		$this->assertSame('two', $this->db->get('test3'));
 	}
 	
 	function testRandom() {

@@ -4,17 +4,17 @@ require_once 'BaseTest.php';
 class ListTest extends BaseTest {
 	
 	function testRPush() {
-		$this->assertSame(-1, $this->db->rpush('test1', 'one'));
-		$this->assertSame(-1, $this->db->rpush('test1', 'two'));
+		$this->assertSame(1, $this->db->rpush('test1', 'one'));
+		$this->assertSame(2, $this->db->rpush('test1', 'two'));
 		
 		// multi insert
-		$this->assertSame(-1, $this->db->rpush('test1', 'three', 'four'));
+		$this->assertSame(4, $this->db->rpush('test1', 'three', 'four'));
 		
-		// strict behavior
-		Plodis_List::$return_counts = true;
-		$this->assertSame(5, $this->db->rpush('test1', 'five'));
-		$this->assertSame(7, $this->db->rpush('test1', 'six', 'seven'));
+		// opt behavior
 		Plodis_List::$return_counts = false;
+		$this->assertSame(-1, $this->db->rpush('test1', 'five'));
+		$this->assertSame(-1, $this->db->rpush('test1', 'six', 'seven'));
+		Plodis_List::$return_counts = true;
 		
 		// check result
 		$this->assertSame(array('one', 'two', 'three', 'four', 'five', 'six', 'seven'), $this->db->lrange('test1', 0, -1));
@@ -25,17 +25,17 @@ class ListTest extends BaseTest {
 	}
 	
 	function testLPush() {
-		$this->assertSame(-1, $this->db->lpush('test1', 'one'));
-		$this->assertSame(-1, $this->db->lpush('test1', 'two'));
+		$this->assertSame(1, $this->db->lpush('test1', 'one'));
+		$this->assertSame(2, $this->db->lpush('test1', 'two'));
 		
 		// multi insert
-		$this->assertSame(-1, $this->db->lpush('test1', 'three', 'four'));
+		$this->assertSame(4, $this->db->lpush('test1', 'three', 'four'));
 		
-		// strict behavior
-		Plodis_List::$return_counts = true;
-		$this->assertSame(5, $this->db->lpush('test1', 'five'));
-		$this->assertSame(7, $this->db->lpush('test1', 'six', 'seven'));
+		// opt behavior
 		Plodis_List::$return_counts = false;
+		$this->assertSame(-1, $this->db->lpush('test1', 'five'));
+		$this->assertSame(-1, $this->db->lpush('test1', 'six', 'seven'));
+		Plodis_List::$return_counts = true;
 		
 		// check result
 		$this->assertSame(array('seven', 'six', 'five', 'four', 'three', 'two', 'one'), $this->db->lrange('test1', 0, -1));
@@ -96,7 +96,7 @@ class ListTest extends BaseTest {
 	function testLInsert() {
 		$this->db->rpush('test1', 'one', 'two', 'three', 'three', 'four');
 		
-		$this->assertSame(-1, $this->db->linsert('test1', 'before', 'two', 'five'));
+		$this->assertSame(6, $this->db->linsert('test1', 'before', 'two', 'five'));
 		$this->assertSame(array('one', 'five', 'two', 'three', 'three', 'four'), $this->db->lrange('test1', 0, -1));
 		
 		$this->db->linsert('test1', 'after', 'three', 'six');
@@ -225,7 +225,7 @@ class ListTest extends BaseTest {
 		$this->assertSame(null, $this->db->get('test1'));
 		
 		$this->db->lpush('test1', 'one');
-		$this->assertSame(-1, $this->db->lpushx('test1', 'two'));
+		$this->assertSame(2, $this->db->lpushx('test1', 'two'));
 		$this->assertSame(array('two', 'one'), $this->db->lrange('test1', 0, -1));
 	}
 	
@@ -234,7 +234,7 @@ class ListTest extends BaseTest {
 		$this->assertSame(null, $this->db->get('test1'));
 	
 		$this->db->rpush('test1', 'one');
-		$this->assertSame(-1, $this->db->rpushx('test1', 'two'));
+		$this->assertSame(2, $this->db->rpushx('test1', 'two'));
 		$this->assertSame(array('one', 'two'), $this->db->lrange('test1', 0, -1));
 	}
 	

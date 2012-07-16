@@ -17,7 +17,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	 * Whether to return counts
 	 * @var boolean
 	 */
-	public static $return_counts = false;
+	public static $return_counts = true;
 	
 	protected $sql = array(
 		'lpush_index'	=> 'SELECT MIN(weight) FROM <DB> WHERE key=?',
@@ -175,14 +175,11 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	function lpush($key, $values) {
 		$this->proxy->db->lock();
 		$this->proxy->generic->verify($key, 'list');
-		// have to transaction this
 		
 		// find the lowest id
 		$row = $this->fetchOne('lpush_index', array($key));
 		
 		$id = ($row) ? $row[0] - 1 : -1;
-		
-		$id--;
 	
 		$stmt = $this->getStmt('l_insert');
 		foreach($values as $value) {

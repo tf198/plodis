@@ -25,7 +25,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		if(is_object($value)) throw new RuntimeException("Cannot convert object to string");
 		if(is_array($value)) throw new RuntimeException("Cannot convert array to string");
 	
-		if($seconds) $seconds += time();
+		if($seconds !== null) $seconds += time();
 		
 		// try for an update - most efficient
 		$this->proxy->db->lock();

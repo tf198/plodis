@@ -61,6 +61,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		$stmt = $this->proxy->db->cachedStmt($this->sql['select_key']);
 		$stmt->execute(array($key));
 		$row = $stmt->fetch(PDO::FETCH_NUM);
+		$stmt->closeCursor();
 		
 		if(!$row) {
 			return null;

@@ -39,6 +39,13 @@ class ListTest extends BaseTest {
 		
 		// check result
 		$this->assertSame(array('seven', 'six', 'five', 'four', 'three', 'two', 'one'), $this->db->lrange('test1', 0, -1));
+		
+		// check push to other types
+		$this->db->set('test2', 'one');
+		$this->assertThrows('PlodisIncorrectKeyType:', $this->db, 'lpush', 'test2', 'two');
+		
+		$this->db->hset('test3', 'thing', 'it');
+		$this->assertThrows('PlodisIncorrectKeyType:', $this->db, 'lpush', 'test3', 'three');
 	}
 	
 	function testLRange() {

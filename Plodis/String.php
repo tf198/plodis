@@ -10,8 +10,8 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	public static $return_values = false;
 	
 	protected $sql = array(
-		'select_key' 	=> 'SELECT item, field, weight FROM <DB> WHERE key=?',
-		'insert_key' 	=> 'INSERT INTO <DB> (key, item, expiry) VALUES (?, ?, ?)',
+		'select_key' 	=> 'SELECT item, type FROM <DB> WHERE key=?',
+		'insert_key' 	=> 'INSERT INTO <DB> (key, type, item, expiry) VALUES (?, ?, ?, ?)',
 		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=?, field=NULL WHERE key=?',
 		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
 		'incrby' 		=> 'UPDATE <DB> SET item=item + ? WHERE key=?',
@@ -28,28 +28,31 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		if($seconds) $seconds += time();
 		
 		// try for an update - most efficient
+		$this->proxy->db->lock();
 		$count = $this->executeStmt('update_key', array($value, $seconds, $key));
-		if($count==1) return;
+		if($count==1) {
+			$this->proxy->db->unlock();
+			return;
+		}
 	
 		// if an object or a hash we delete and recreate
 		if($count > 1) {
 			$this->proxy->generic->del(array($key));
 		}
 	
-		$this->executeStmt('insert_key', array($key, $value, $seconds));
+		$this->executeStmt('insert_key', array($key, Plodis::TYPE_STRING, $value, $seconds));
+		$this->proxy->db->unlock();
 	}
 	
 	function mset($pairs) {
+		$this->proxy->db->lock();
 		foreach($pairs as $key=>$value) {
 			$this->set($key, $value);
 		}
+		$this->proxy->db->unlock();
 	}
 	
-	function get($key) {
-		return $this->_get($key);
-	}
-	
-	private function _get($key, $_value=null, $_throw=true) {
+	public function get($key) {
 		$this->proxy->generic->gc();
 		
 		//$row = $this->fetchOne('select_key', array($key));
@@ -62,20 +65,21 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		if(!$row) {
 			return null;
 		}
-		if($row[1] !== null && $_throw) throw new RuntimeException('Operation against a key holding the wrong kind of value');
-		if($row[2] !== null && $_throw) throw new RuntimeException('Operation against a key holding the wrong kind of value');
+		if($row[1] != Plodis::TYPE_STRING) throw new PlodisIncorrectKeyType;
 		
 		return $row[0];
 	}
 	
 	function mget($keys) {
+		$this->proxy->db->lock();
 		foreach($keys as &$key) {
 			try {
 				$key = $this->get($key);
-			} catch(RuntimeException $e) {
+			} catch(PlodisIncorrectKeyType $e) {
 				$key = null;
 			}
 		}
+		$this->proxy->db->unlock();
 		return $keys;
 	}
 	
@@ -84,16 +88,21 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	}
 	
 	function incrby($key, $increment) {
+		$this->proxy->db->lock();
 		$c = $this->executeStmt('incrby', array($increment, $key));
 		
 		// check for list/hash
-		if($c > 1) throw new RuntimeException('Operation against a key holding the wrong kind of value');
+		if($c > 1) {
+			$this->proxy->db->unlock(true);
+			throw new RuntimeException('Operation against a key holding the wrong kind of value');
+		}
 		
 		if($c == 0) {
 			$this->set($key, $increment);
 		}
 		
 		if(self::$return_values) return (int)$this->get($key);
+		$this->proxy->db->unlock();
 	}
 	
 	function decr($key) {
@@ -105,8 +114,10 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	}
 	
 	function append($key, $value) {
+		$this->proxy->db->lock();
 		$modified = $this->get($key) . $value;
 		$this->set($key, $modified);
+		$this->proxy->db->unlock();
 		return strlen($modified);
 	}
 	

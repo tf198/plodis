@@ -18,7 +18,7 @@ class StringTest extends BaseTest {
 		
 		// list value
 		$this->db->rpush('test3', 'one');
-		$this->assertThrows('RuntimeException: Operation against a key', $this->db, 'get', 'test3');
+		$this->assertThrows('PlodisIncorrectKeyType:', $this->db, 'get', 'test3');
 	}
 	
 	function testSet() {

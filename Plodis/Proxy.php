@@ -5,6 +5,20 @@ define('PLODIS_BASE', dirname(dirname(__FILE__)));
 
 class Plodis_Proxy {
 	
+	const TYPE_STRING	= 1;
+	const TYPE_LIST		= 2;
+	const TYPE_HASH		= 3;
+	const TYPE_SET		= 4;
+	const TYPE_ZSET		= 5;
+	
+	public static $types = array(
+		self::TYPE_STRING => 'string',
+		self::TYPE_LIST	=> 'list',
+		self::TYPE_HASH	=> 'hash',
+		self::TYPE_SET	=> 'set',
+		self::TYPE_ZSET	=> 'zset',
+	);
+	
 	/**
 	 * Generic module
 	 * @var Plodis_Generic
@@ -141,7 +155,7 @@ class Plodis_DB {
 	 * @var multitype:string
 	 */
 	private static $create_sql = array(
-		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, field TEXT, weight NUMERIC, item BLOB, expiry NUMERIC)',
+		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, key TEXT, field TEXT, weight NUMERIC, item BLOB, expiry NUMERIC)',
 		'CREATE INDEX IF NOT EXISTS <DB>_key ON <DB> (key)',
 		'CREATE INDEX IF NOT EXISTS <DB>_field ON <DB> (key, field)',
 		'CREATE INDEX IF NOT EXISTS <DB>_weight ON <DB> (key, weight)',
@@ -256,3 +270,9 @@ class Plodis_DB {
 class PlodisError extends RuntimeException {}
 
 class PlodisNotImplementedError extends PlodisError {}
+
+class PlodisIncorrectKeyType extends PlodisError {
+	function __construct($message="Operation against a key holding the wrong kind of value", $code=null) {
+		parent::__construct($message, $code);
+	}
+}

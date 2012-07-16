@@ -14,12 +14,12 @@ require_once PLODIS_BASE . '/interfaces/Redis_Hash_2_6_0.php';
 class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
 
 	protected $sql = array(
-		'h_select'		=> 'SELECT field, item FROM <DB> WHERE key=? ORDER BY id',
-		'h_insert' 		=> 'INSERT INTO <DB> (key, field, weight, item) VALUES (?, ?, 1, ?)',
+		'h_select'		=> 'SELECT field, item, type FROM <DB> WHERE key=? ORDER BY id',
+		'h_insert' 		=> 'INSERT INTO <DB> (key, type, field, item) VALUES (?, ?, ?, ?)',
 		'h_update' 		=> 'UPDATE <DB> SET item=? WHERE key=? AND field=?',
 		'h_delete'		=> 'DELETE FROM <DB> WHERE key=? AND field=?',
 		'hlen'			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
-		'hget'			=> 'SELECT id, item FROM <DB> WHERE key=? AND field=?',
+		'hget'			=> 'SELECT id, item, type FROM <DB> WHERE key=? AND field=?',
 		'hincrby'		=> 'UPDATE <DB> SET item=item+? WHERE key=? AND field=?',
 	);
 	
@@ -78,7 +78,12 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
     public function hget($key, $field) {
     	$item = $this->fetchOne('hget', array($key, $field));
     	
-    	return ($item) ? $item[1] : null;
+    	if($item) {
+    		if($item[2] != Plodis::TYPE_HASH) throw new PlodisIncorrectKeyType;
+    		return $item[1];
+    	} else {
+    		return null;
+    	}
     }
 
     /**
@@ -130,11 +135,14 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hincrbyfloat($key, $field, $increment) {
+    	$this->proxy->db->lock();
     	$c = $this->executeStmt('hincrby', array($increment, $key, $field));
     	if($c==0) {
-    		$this->executeStmt('h_insert', array($key, $field, $increment));
+    		$this->executeStmt('h_insert', array($key, Plodis::TYPE_HASH, $field, $increment));
+    		$this->proxy->db->unlock();
     		return (float) $increment;
     	}
+    	$this->proxy->db->unlock();
     	return (float) $this->hget($key, $field);
     }
 
@@ -182,8 +190,10 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hmget($key, $fields) {
+    	$this->proxy->db->lock();
     	$result = array();
     	foreach($fields as $field) $result[] = $this->hget($key, $field);
+    	$this->proxy->db->unlock();
     	return $result;
     }
 
@@ -200,9 +210,11 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hmset($key, $fields) {
+    	$this->proxy->db->lock();
     	foreach($fields as $field=>$value) {
     		$this->hset($key, $field, $value);
     	}
+    	$this->proxy->db->unlock();
     }
 
     /**
@@ -219,10 +231,17 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hset($key, $field, $value) {
+    	$this->proxy->db->lock();
     	$count = $this->executeStmt('h_update', array($value, $key, $field));
     	if($count == 1) return 0;
     	
-    	$this->executeStmt('h_insert', array($key, $field, $value));
+    	if($count>1) {
+    		$this->proxy->db->unlock(true);
+    		throw new PlodisIncorrectKeyType;
+    	}
+    	
+    	$this->executeStmt('h_insert', array($key, Plodis::TYPE_HASH, $field, $value));
+    	$this->proxy->db->unlock();
     	return 1;
     }
 
@@ -240,9 +259,14 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hsetnx($key, $field, $value) {
-    	if($this->hget($key, $field) !== null) return 0;
+    	$this->proxy->db->lock();
+    	if($this->hget($key, $field) !== null) {
+    		$this->proxy->db->unlock();
+    		return 0;
+    	}
     	
-    	$this->executeStmt('h_insert', array($key, $field, $value));
+    	$this->executeStmt('h_insert', array($key, Plodis::TYPE_HASH, $field, $value));
+    	$this->proxy->db->unlock();
     	return 1;
     }
 

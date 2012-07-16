@@ -9,6 +9,8 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	 */
 	public static $purge_frequency = 0.2;
 	
+	public static $skip_verification = false;
+	
 	protected $sql = array(
 		'select_key' 	=> 'SELECT item, expiry FROM <DB> WHERE key=?',
 		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
@@ -17,7 +19,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		'expire'		=> 'DELETE FROM <DB> WHERE expiry IS NOT NULL AND expiry < ?',
 		'get_keys' 		=> 'SELECT key FROM <DB>',
 		'get_fuzzy_keys'=> 'SELECT key FROM <DB> WHERE key LIKE ?',
-		'type'			=> 'SELECT field, weight FROM <DB> WHERE key=? LIMIT 1',
+		'type'			=> 'SELECT type FROM <DB> WHERE key=? LIMIT 1',
 		'rename'		=> 'UPDATE <DB> SET key=? WHERE key=?',
 		'random'		=> 'SELECT DISTINCT key FROM <DB> ORDER BY RANDOM() LIMIT 1',
 	);
@@ -148,12 +150,14 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		
 		if(!$data) return null;
 
-		if($data[0] == null) {
-			return ($data[1] === null) ? "string" : "list";
-		}
+		return Plodis::$types[$data[0]];
+	}
+	
+	function verify($key, $expected) {
+		if(self::$skip_verification) return;
 		
-		if($data[1] === '1') return 'hash';
-		if($data[1] === null) return 'set';
-		return 'zset';
+		$type = $this->type($key);
+		if($type === null) return;
+		if($type != $expected) throw new PlodisIncorrectKeyType;
 	}
 }

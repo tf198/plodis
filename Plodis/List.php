@@ -22,11 +22,11 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	protected $sql = array(
 		'lpush_index'	=> 'SELECT MIN(weight) FROM <DB> WHERE key=?',
 		'llen' 			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
-		'l_forward'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY weight, id LIMIT ? OFFSET ?',
-		'l_reverse'		=> 'SELECT id, item FROM <DB> WHERE key=? ORDER BY weight DESC, id DESC LIMIT ? OFFSET ?',
-		'l_insert' 		=> 'INSERT INTO <DB> (key, item, weight) VALUES (?, ?, ?)',
+		'l_forward'		=> 'SELECT id, item, type FROM <DB> WHERE key=? ORDER BY weight, id LIMIT ? OFFSET ?',
+		'l_reverse'		=> 'SELECT id, item, type FROM <DB> WHERE key=? ORDER BY weight DESC, id DESC LIMIT ? OFFSET ?',
+		'l_insert' 		=> 'INSERT INTO <DB> (key, type, item, weight) VALUES (?, ?, ?, ?)',
 		'lset'			=> 'UPDATE <DB> SET item=? WHERE id=?',
-		'l_key_val'		=> 'SELECT id, weight FROM <DB> WHERE key=? AND item=?',
+		'l_key_val'		=> 'SELECT id, weight, type FROM <DB> WHERE key=? AND item=?',
 		'l_shift'		=> 'UPDATE <DB> SET weight = weight-1 WHERE key=? AND id<=? OR weight<?', // creates a space before the target item
 		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY weight, id LIMIT ?)',
 		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY weight DESC, id DESC LIMIT ?)',
@@ -50,10 +50,15 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function lset($key, $index, $value) {
+		$this->proxy->db->lock();
 		$row = $this->_lindex($key, $index);
-		if(!$row) throw new RuntimeException("Index out of range: {$index}");
+		if(!$row) {
+			$this->proxy->db->unlock();
+			throw new RuntimeException("Index out of range: {$index}");
+		}
 	
 		$c = $this->executeStmt('lset', array($value, $row[0]));
+		$this->proxy->db->unlock(); // dont have to roll back anyway
 		if ($c != 1) throw new RuntimeException("Failed to update list value");
 	}
 	
@@ -64,11 +69,13 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			$index = -$index - 1;
 		}
 		$row = $this->fetchOne($s, array($key, 1, $index));
+		if($row && $row[2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
 		return $row;
 	}
 	
 	function ltrim($key, $start, $end) {
 		#$this->proxy->log("Starting {$start}, {$end}", LOG_WARNING);
+		$this->proxy->db->lock();
 		if($start > 0) {
 			$c = $this->executeStmt('ltrim_l', array($key, $start));
 			#$this->proxy->log("Removed {$c} elements from start", LOG_WARNING);
@@ -84,6 +91,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		
 		if($start == 0 && $end <= 0) {
 			#$this->proxy->log("No further removals required", LOG_WARNING);
+			$this->proxy->db->unlock();
 			return;
 		}
 		
@@ -93,10 +101,14 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			$start = 0;
 			$s = 'ltrim_l';
 		}
-		if($start != 0) throw new RuntimeException("Unabled to proceed");
+		if($start != 0) {
+			$this->proxy->db->unlock(true);
+			throw new RuntimeException("Unabled to proceed");
+		}
 		$c = $this->llen($key);
 		#$this->proxy->log("C: {$c}, end: $end", LOG_WARNING);
 		$c = $this->executeStmt($s, array($key, $c-$end));
+		$this->proxy->db->unlock();
 		#$this->proxy->log("Removed {$c} elements from {$s}", LOG_WARNING);
 	}
 	
@@ -147,30 +159,39 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function rpush($key, $values) {
+		$this->proxy->db->lock();
+		$this->proxy->generic->verify($key, 'list');
+		
 		$stmt = $this->getStmt('l_insert');
 		foreach($values as $value) {
-			$stmt->execute(array($key, $value, 0));
+			$stmt->execute(array($key, Plodis::TYPE_LIST, $value, 0));
 		}
 	
-		return self::$return_counts ? $this->llen($key) : -1;
+		$result = self::$return_counts ? $this->llen($key) : -1;
+		$this->proxy->db->unlock();
+		return $result;
 	}
 	
 	function lpush($key, $values) {
-		// have to transaction this
 		$this->proxy->db->lock();
-	
+		$this->proxy->generic->verify($key, 'list');
+		// have to transaction this
+		
 		// find the lowest id
-		$id = $this->fetchOne('lpush_index', array($key));
-		$id = ($id) ? $id[0] - 1 : -1;
+		$row = $this->fetchOne('lpush_index', array($key));
+		
+		$id = ($row) ? $row[0] - 1 : -1;
+		
+		$id--;
 	
 		$stmt = $this->getStmt('l_insert');
 		foreach($values as $value) {
-			$stmt->execute(array($key, $value, --$id));
+			$stmt->execute(array($key, Plodis::TYPE_LIST, $value, --$id));
 		}
 	
+		$result = self::$return_counts ? $this->llen($key) : -1;
 		$this->proxy->db->unlock();
-	
-		return self::$return_counts ? $this->llen($key) : -1;
+		return $result;
 	}
 	
 	function lpop($key) {
@@ -212,7 +233,12 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			if($timeout == 0) break; // make sure our descending timer doesn't become indefinate
 		}
 	
-		return ($result) ? $result[1] : null;
+		if($result) {
+			if($result[2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
+			return $result[1];
+		} else {
+			return null;
+		}
 	}
 	#endif
 	
@@ -256,7 +282,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		
 		// go in at same index as shifted items
 		$items[0][1]--;
-		$this->fetchOne('l_insert', array($key, $value, $items[0][1]));
+		$this->fetchOne('l_insert', array($key, Plodis::TYPE_LIST, $value, $items[0][1]));
 	
 		$this->proxy->db->unlock();
 	
@@ -269,15 +295,27 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function lpushx($key, $value) {
+		$this->proxy->db->lock();
 		$current = $this->lindex($key, 0);
-		if($current == null) return 0;
-		return $this->lpush($key, array($value));
+		if($current == null) {
+			$result = 0;
+		} else {
+			$result = $this->lpush($key, array($value));
+		}
+		$this->proxy->db->unlock();
+		return $result;
 	}
 	
 	function rpushx($key, $value) {
+		$this->proxy->db->lock();
 		$current = $this->lindex($key, 0);
-		if($current == null) return 0;
-		return $this->rpush($key, array($value));
+		if($current == null) {
+			$result = 0;
+		} else {
+			$result = $this->rpush($key, array($value));
+		}
+		$this->proxy->db->unlock();
+		return $result;
 	}
 	#endif
 }

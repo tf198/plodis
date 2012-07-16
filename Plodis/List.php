@@ -21,7 +21,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	protected $sql = array(
 		'lpush_index'	=> 'SELECT MIN(weight) FROM <DB> WHERE key=?',
-		'llen' 			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
+		'llen' 			=> 'SELECT COUNT(*) FROM <DB> WHERE key=?',
 		'l_forward'		=> 'SELECT id, item, type FROM <DB> WHERE key=? ORDER BY weight, id LIMIT ? OFFSET ?',
 		'l_reverse'		=> 'SELECT id, item, type FROM <DB> WHERE key=? ORDER BY weight DESC, id DESC LIMIT ? OFFSET ?',
 		'l_insert' 		=> 'INSERT INTO <DB> (key, type, item, weight) VALUES (?, ?, ?, ?)',

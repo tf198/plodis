@@ -118,7 +118,9 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hincrby($key, $field, $increment) {
-    	return (int) $this->hincrbyfloat($key, $field, (int)$increment);
+    	$result = $this->hincrbyfloat($key, $field, (int)$increment);
+    	if($result !== null) $result = (int) $result;
+    	return $result;
     }
 
     /**
@@ -139,11 +141,12 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
     	$c = $this->executeStmt('hincrby', array($increment, $key, $field));
     	if($c==0) {
     		$this->executeStmt('h_insert', array($key, Plodis::TYPE_HASH, $field, $increment));
-    		$this->proxy->db->unlock();
-    		return (float) $increment;
+    		$result = (float) $increment;
+    	} else {
+    		$result = ($this->proxy->options['return_incr_values']) ? (float) $this->hget($key, $field) : null;
     	}
     	$this->proxy->db->unlock();
-    	return (float) $this->hget($key, $field);
+    	return $result;
     }
 
     /**

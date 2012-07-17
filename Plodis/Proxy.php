@@ -48,6 +48,14 @@ class Plodis_Proxy {
 		LOG_DEBUG	=> 'DEBUG',
 	);
 	
+	public $options = array(
+		'validation_checks' => true,
+		'return_counts' => true,
+		'return_incr_values' => true,
+		'poll_frequency' => 0.1,
+		'purge_frequency' => 0.2,
+	);
+	
 	/**
 	 * @param PDO|string $pdo
 	 * @param boolean $init create tables if neccesary
@@ -121,9 +129,12 @@ class Plodis_Proxy {
 		}
 	}
 	
-	static function strict() {
-		Plodis_String::$return_values = true;
-		Plodis_List::$return_counts = true;
+	public function getOption($name, $default=null) {
+		return (isset($this->options[$name])) ? $this->options[$name] : $default;
+	}
+	
+	public function setOption($name, $value) {
+		$this->options[$name] = $value;
 	}
 }
 

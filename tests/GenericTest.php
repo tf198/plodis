@@ -7,10 +7,10 @@ class GenericTest extends BaseTest {
 		$this->db->mset(array('test1' => 1, 'test2' => 'two'));
 	
 		$this->assertSame(1, $this->db->del('test1'));
-		$this->assertSame(array('test2'), $this->db->keys());
+		$this->assertSame(array('test2'), $this->db->keys('test*'));
 	
 		$this->assertSame(0, $this->db->del('bad1', 'bad2'));
-		$this->assertSame(array('test2'), $this->db->keys());
+		$this->assertSame(array('test2'), $this->db->keys('test*'));
 	}
 	
 	function testExists() {
@@ -25,19 +25,23 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testKeys() {
+		$this->assertSame(array('check_1', 'check_2', 'check_3', 'check_4'), $this->db->keys());
+		
+		$loc = new Plodis(':memory:');
+		
 		// no keys
-		$this->assertSame(array(), $this->db->keys());
+		$this->assertSame(array(), $loc->keys());
 	
-		$this->db->mset(array('one' => 1, 'two' => 'two', 'three' => 'iii'));
+		$loc->mset(array('one' => 1, 'two' => 'two', 'three' => 'iii'));
 	
 		// normal match
-		$this->assertSame(array('one', 'two', 'three'), $this->db->keys());
+		$this->assertSame(array('one', 'two', 'three'), $loc->keys());
 	
 		// fuzzy matches
-		$this->assertSame(array('two'), $this->db->keys('two')); // silly but valid
-		$this->assertSame(array('two', 'three'), $this->db->keys('t*'));
-		$this->assertSame(array('one', 'three'), $this->db->keys('*e*'));
-		$this->assertSame(array(), $this->db->keys('z*'));
+		$this->assertSame(array('two'), $loc->keys('two')); // silly but valid
+		$this->assertSame(array('two', 'three'), $loc->keys('t*'));
+		$this->assertSame(array('one', 'three'), $loc->keys('*e*'));
+		$this->assertSame(array(), $loc->keys('z*'));
 	}
 	
 	function testExpire() {
@@ -185,14 +189,16 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testRandom() {
-		$this->assertSame(null, $this->db->randomkey());
+		$loc = new Plodis(':memory:');
+		
+		$this->assertSame(null, $loc->randomkey());
 		
 		$values = array('a' => 1, 'b' => 2, 'c' => 3, 'd' => 4, 'e' => 5);
-		$this->db->mset($values);
+		$loc->mset($values);
 		$diff = 0;
 		$prev = '';
 		for($i=0; $i<10; $i++) {
-			$c = $this->db->randomkey();
+			$c = $loc->randomkey();
 			if($c != $prev) $diff++;
 			$this->assertTrue(array_key_exists($c, $values));
 			$prev = $c;

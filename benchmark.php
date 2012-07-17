@@ -40,6 +40,9 @@ bench('PDO from existing data');
 $db = new Plodis($pdo);
 bench('construct');
 
+$db->setOption('return_counts', false);
+$db->setOption('validation_checks', false);
+
 bench("Starting loop tests - " . LOOP_SIZE . " iterations");
 
 for($i=0; $i<LOOP_SIZE; $i++) {

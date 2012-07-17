@@ -11,6 +11,18 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 
 	function setUp() {
 		$this->db = new Plodis(new PDO('sqlite::memory:'));
+		
+		$this->db->mset(array('check_1' => 'one', 'check_2' => 'two'));
+		$this->db->lpush('check_3', 'one', 'two');
+		$this->db->rpush('check_3', 'three', 'four');
+		$this->db->hset('check_4', 'one', '1');
+		$this->db->hset('check_4', 'two', '2');
+	}
+	
+	function tearDown() {
+		$this->assertSame(array('one', 'two'), $this->db->mget('check_1', 'check_2'));
+		$this->assertSame(array('two', 'one', 'three', 'four'), $this->db->lrange('check_3', 0, -1));
+		$this->assertSame(array('1', '2'), $this->db->hvals('check_4'));
 	}
 	
 	function assertThrows($message, $obj, $method, $param) {

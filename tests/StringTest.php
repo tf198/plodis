@@ -46,19 +46,17 @@ class StringTest extends BaseTest {
 	function testMSet() {
 		$this->db->mset(array('test1' => 1, 'test2' => 'two'));
 		
-		$this->assertEquals(array('test1', 'test2'), $this->db->keys());
+		$this->assertEquals(array('test1', 'test2'), $this->db->keys('test*'));
 	}
 	
 	function testIncr() {
 		$this->db->mset(array('test1' => 1, 'test2' => 'two'));
 		
-		$this->assertSame(null, $this->db->incr('test1'));
-		$this->assertSame('2', $this->db->get('test1'));
+		$this->assertSame(2, $this->db->incr('test1'));
 		
-		// strict behavior
-		Plodis_String::$return_values = true;
-		$this->assertSame(3, $this->db->incr('test1'));
-		Plodis_String::$return_values = false;
+		$this->db->setOption('return_incr_values', false);
+		$this->assertSame(null, $this->db->incr('test1'));
+		$this->db->setOption('return_incr_values', true);
 	}
 	
 	function testAppend() {

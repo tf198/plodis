@@ -45,64 +45,54 @@ it will throw a ``PlodisNotImplementedError``.
 :Server:
    Not implemented
 
-Caveats
+Options
 =======
+By default Plodis should behave exactly as a Redis instance with the same guarantees about **atomicity** and type checking.  The following options
+are provided to turn off some of the strict checking and fine tune performance options.  Once you have fully tested your app you should be able to
+turn off many of these and see 2-3 times throughput on some operations, particularly LIST ops.
 
-:List PUSH operations:
-   do not throw an error if a key exists and is not a list (ie set by SET).  The existing value will be treated as the first item
-   in the list.  For efficiency they return -1 rather than the number of items in the list - set ``Plodis_List::$return_counts = true``
-   or call ``Plodis::strict()`` for correct documented behaviour.
-:INCR / DECR:
-   and their related BY methods do not return the new value by default.  Set ``Plodis_String::$return_values = true`` or call ``Plodis::strict()``
-   for documented behavior.
-:Multiple arguments:
-   these are accepted as an ``array()``.  If it is the last argument you can pass them as separate args so ``mget(array('key1', 'key2'))``
-   and ``mget('key1', 'key2')`` are identical.
-:Millisecond expiry:
+Use ``$plodis->setOption($name, $value)`` and ``$plodis->getOption($name)`` to modify the options. 
+
+:return_counts (``true``):
+   [ RPUSH, LPUSH, LINSERT, RPUSHX, LPUSHX ] return the size of the list after the operation which requires an additional query.  If this is set
+   to ``false``, -1 is returned instead.
+:return_incr_values (``true``):
+   [ INCR, DECR, INCRBY, DECRBY, INCRBYFLOAT, HINCRBY, HINCRBYFLOAT ] return the new value of the item which requires an additional query.  if this is 
+   set to ``false``, null is returned instead.
+:validation_checks (``true``):
+   many methods will throw an exception if the key type is incorrect (e.g. if you try to LPUSH to a String).  Where possible these checks are integrated
+   into the operation, but sometimes a separate query is required to check the key.  Settings this to ``false`` bypasses these queries.
+:poll_frequency (0.1):
+   [ BRPOP, BLPOP, BRPOPLPUSH, BPOLL (PubSub) ] are not true blocking functions but poll every 100ms.  Make this faster or slower as required.
+:purge_frequency (0.2):
    items are expired correctly within a PHP session but there may be a delay of up to 200ms when communicating between processes. Set
-   ``Plodis_Generic::$purge_frequency`` to 0 (or any other fraction of a second) on the receiver for documented behaviour.
-:Pub / Sub:
-   this is implemented as mailbox fanout using the Lists module - should be fine for everyday work but dont try and build a **twitter** with
-   it.  Might look at reference fanout in the future: http://www.scribd.com/doc/16952419/Building-scalable-complex-apps-on-App-Engine
-:AUTH:
-   wont throw an error but doesn't actually do anything
+   this to 0 (or any other fraction of a second as required) on the receiver for documented behaviour.
 
 Implementation
 ==============
 Each Plodis instance is backed by a single SQLite data file with as many optomisations turned on as possible so there is the potential for data
 loss in the event of a crash (it should be possible to set some guarantees using the Server module, its just a file after all, but I haven't got round
-to it yet.
-
-=======  =======  =======  =======  =======  =======
-         String   List     Hash     Set      ZSet
-=======  =======  =======  =======  =======  =======
-id       AUTO     AUTO     AUTO     AUTO     AUTO
-key      key      key      key      key      key
-field    NULL     NULL     field    value    value
-weight   NULL     -ve      1        NULL     -ve
-item     value    value    value    NULL     NULL
-=======  =======  =======  =======  =======  =======
+to it yet).  Every method should be **fully atomic**
 
 TODO
 ====
 
-* Finish Generic, String and List modules
+* Figure out what we do in the event of a crash (delete and recreate file)
+* Finish Generic, String, Set and ZSet modules
 * Finish preprocessor directives so we can compile for a specific version
 * Make sure the test suite is complete (return types?)
-* Move behavior switches from classes to CONFIG GET
-* Implement other modules
 * Other optomisations (VACUUM?)
 * Figure out why I spent two days cloning something that was already excellent :-)
    
 Performance
 ===========
 
-I thought it would be rubbish but actually it's not bad using a dedicated SQLite database.  You can expect ~4-8K SETs per sec and ~13K/s GETs in standard mode 
-but if you lock the database you can get 2-3 times throughput. List operations are fairly consistent around ~9K/s, though LPUSH is a bit slower.
-As you can see the memory footprint for the package is around 600K - no need to change ``memory_limit`` in your ``php.ini``.  
+I thought it would be rubbish but actually it's not bad using a dedicated SQLite database.  You can expect ~4-6K SETs per sec and ~13K/s GETs in standard mode 
+but if you lock the database you can get 2-3 times throughput. List operations are fairly consistent around ~6K/s.
+As you can see the memory footprint for the package is around 700K - no need to change ``memory_limit`` in your ``php.ini``.  
 
 The benchmarks are all run on my AMD Phenom II x6 3.20Ghz using a *dirty* database - i.e. the data from previous runs is left in so it gives a good idea of real world usage
-and each loop set at 1000.
+and each loop set at 1000.  ``return_counts`` and ``validation_checks`` are both set to ``false``.
 
 Just rememeber that if performance becomes that important to you then you should probably shift to a Redis server! :-)
 
@@ -111,23 +101,25 @@ Mem (KB)   Time (ms)     Ops   Description
 ---------- ----------- ------- ---------------------------------------
 Total Step Total  Step  ops/s
 ===== ==== ====== ==== ======= =======================================
-  369  369      0    0   24385 init (9170)
-  634  265      1    1     518 include
-  635    0      2    0    3953 PDO from existing data
-  725   90      4    2     384 construct
-  725    0      4    0   45590 Starting loop tests - 1000 iterations
-  824   98    250  245    4076 SET (insert)
-  824    0    384  133    7469 SET (update)
-  824    0    422   38   26227 SET (update, locked)
-  825    0    499   76   12988 GET
-  825    0    529   29   33407 GET (locked)
-  940  115    675  146    6849 LPUSH
-  940    0    779  104    9548 RPUSH
-  942    2    891  111    8964 LPOP
-  943    0   1104  213    4690 LLEN
-  943    0   1234  129    7707 LINDEX
-  943    0   1343  108    9187 RPOP
-  944    0   1343    0    9425 cleanup
+  370  370      0    0   24966 init (1499)
+  689  319      2    2     472 include
+  690    0      2    0    3905 PDO from existing data
+  798  108      5    3     326 construct
+  799    0      5    0   34663 Starting loop tests - 1000 iterations
+  906  107    226  221    4517 SET (insert)
+  906    0    383  157    6366 SET (update)
+  906    0    445   61   16351 SET (update, locked)
+  907    0    524   79   12600 GET
+  907    0    555   31   32115 GET (locked)
+ 1053  146    777  221    4508 LPUSH
+ 1053    0    965  187    5325 RPUSH
+ 1056    2   1107  142    7029 LPOP
+ 1057    0   1261  154    6488 LLEN
+ 1057    0   1438  176    5667 LINDEX
+ 1058    1   1570  132    7554 RPOP
+ 1058    0   1570    0   45590 cleanup
 ===== ==== ====== ==== ======= =======================================
+
+
 
 

@@ -3,12 +3,6 @@ require_once PLODIS_BASE . "/interfaces/Redis_String_2_6_0.php";
 
 class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	
-	/**
-	 * Whether to return incr/decr results
-	 * @var boolean
-	 */
-	public static $return_values = false;
-	
 	protected $sql = array(
 		'select_key' 	=> 'SELECT item, type FROM <DB> WHERE key=?',
 		'insert_key' 	=> 'INSERT INTO <DB> (key, type, item, expiry) VALUES (?, ?, ?, ?)',
@@ -100,10 +94,12 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		
 		if($c == 0) {
 			$this->set($key, $increment);
+			$result = $increment;
+		} else {
+			$result = ($this->proxy->options['return_incr_values']) ? (int)$this->get($key) : null;
 		}
-		
-		if(self::$return_values) return (int)$this->get($key);
 		$this->proxy->db->unlock();
+		return $result;
 	}
 	
 	function decr($key) {

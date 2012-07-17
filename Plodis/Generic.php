@@ -9,16 +9,14 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	 */
 	public static $purge_frequency = 0.2;
 	
-	public static $skip_verification = false;
-	
 	protected $sql = array(
 		'select_key' 	=> 'SELECT item, expiry FROM <DB> WHERE key=?',
 		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
 		'set_expiry'	=> 'UPDATE <DB> SET expiry=? WHERE key=?',
 		'alarm'			=> 'SELECT MIN(expiry) FROM <DB> WHERE expiry IS NOT NULL',
 		'expire'		=> 'DELETE FROM <DB> WHERE expiry IS NOT NULL AND expiry < ?',
-		'get_keys' 		=> 'SELECT key FROM <DB>',
-		'get_fuzzy_keys'=> 'SELECT key FROM <DB> WHERE key LIKE ?',
+		'get_keys' 		=> 'SELECT DISTINCT key FROM <DB> ORDER BY id',
+		'get_fuzzy_keys'=> 'SELECT DISTINCT key FROM <DB> WHERE key LIKE ? ORDER BY id',
 		'type'			=> 'SELECT type FROM <DB> WHERE key=? LIMIT 1',
 		'rename'		=> 'UPDATE <DB> SET key=? WHERE key=?',
 		'random'		=> 'SELECT DISTINCT key FROM <DB> ORDER BY RANDOM() LIMIT 1',
@@ -103,7 +101,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		
 		// set a new alarm
 		$result = $this->fetchOne('alarm');
-		$this->alarm = ($result[0]) ? $result[0] : $now + self::$purge_frequency;
+		$this->alarm = ($result[0]) ? $result[0] : $now + $this->proxy->options['purge_frequency'];
 	}
 	
 	function dump($key) {
@@ -175,7 +173,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	}
 	
 	function verify($key, $expected) {
-		if(self::$skip_verification) return;
+		if($this->proxy->options['validation_checks'] == false) return;
 		
 		$type = $this->type($key);
 		if($type === null) return;

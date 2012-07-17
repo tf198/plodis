@@ -11,10 +11,10 @@ class ListTest extends BaseTest {
 		$this->assertSame(4, $this->db->rpush('test1', 'three', 'four'));
 		
 		// opt behavior
-		Plodis_List::$return_counts = false;
+		$this->db->setOption('return_counts', false);
 		$this->assertSame(-1, $this->db->rpush('test1', 'five'));
 		$this->assertSame(-1, $this->db->rpush('test1', 'six', 'seven'));
-		Plodis_List::$return_counts = true;
+		$this->db->setOption('return_counts', true);
 		
 		// check result
 		$this->assertSame(array('one', 'two', 'three', 'four', 'five', 'six', 'seven'), $this->db->lrange('test1', 0, -1));
@@ -32,10 +32,10 @@ class ListTest extends BaseTest {
 		$this->assertSame(4, $this->db->lpush('test1', 'three', 'four'));
 		
 		// opt behavior
-		Plodis_List::$return_counts = false;
+		$this->db->setOption('return_counts', false);
 		$this->assertSame(-1, $this->db->lpush('test1', 'five'));
 		$this->assertSame(-1, $this->db->lpush('test1', 'six', 'seven'));
-		Plodis_List::$return_counts = true;
+		$this->db->setOption('return_counts', true);
 		
 		// check result
 		$this->assertSame(array('seven', 'six', 'five', 'four', 'three', 'two', 'one'), $this->db->lrange('test1', 0, -1));

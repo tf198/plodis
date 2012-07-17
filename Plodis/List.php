@@ -7,18 +7,6 @@ require_once PLODIS_BASE . "/interfaces/Redis_List_2_6_0.php";
 
 class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
-	/**
-	 * How often in seconds to poll for blocking operations
-	 * @var int
-	 */
-	public static $poll_frequency = 0.1;
-	
-	/**
-	 * Whether to return counts
-	 * @var boolean
-	 */
-	public static $return_counts = true;
-	
 	protected $sql = array(
 		'lpush_index'	=> 'SELECT MIN(weight) FROM <DB> WHERE key=?',
 		'llen' 			=> 'SELECT COUNT(*) FROM <DB> WHERE key=?',
@@ -36,11 +24,11 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	);
 	
 	#ifdef REDIS_1_0_0
-	function llen($key) {
+	function llen($key, $verified=false) {
+		// this is called by push ops so cache the verification if possible
+		if(!$verified) $this->proxy->generic->verify($key, 'list');
+		
 		$row = $this->fetchOne('llen', array($key));
-		
-		// TODO: should throw exception if not a list 
-		
 		return (int) $row[0];
 	}
 	
@@ -167,7 +155,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			$stmt->execute(array($key, Plodis::TYPE_LIST, $value, 0));
 		}
 	
-		$result = self::$return_counts ? $this->llen($key) : -1;
+		$result = $this->proxy->options['return_counts'] ? $this->llen($key) : -1;
 		$this->proxy->db->unlock();
 		return $result;
 	}
@@ -186,7 +174,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			$stmt->execute(array($key, Plodis::TYPE_LIST, $value, --$id));
 		}
 	
-		$result = self::$return_counts ? $this->llen($key) : -1;
+		$result = $this->proxy->options['return_counts'] ? $this->llen($key) : -1;
 		$this->proxy->db->unlock();
 		return $result;
 	}
@@ -201,7 +189,8 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	private function _pop($key, $type, $timeout=-1) {
 	
-		$us = self::$poll_frequency * 1000000;
+		$freq = $this->proxy->options['poll_frequency'];
+		$us = $freq * 1000000; // microseconds
 	
 		$pop = $this->proxy->db->cachedStmt($this->sql[$type]);
 		$del = $this->proxy->db->cachedStmt($this->sql['list_del']);
@@ -226,7 +215,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			usleep($us);
 			
 			if($timeout == 0) continue;
-			$timeout -= self::$poll_frequency;
+			$timeout -= $freq;
 			if($timeout == 0) break; // make sure our descending timer doesn't become indefinate
 		}
 	
@@ -283,7 +272,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 		$this->proxy->db->unlock();
 	
-		return self::$return_counts ? $this->llen($key) : -1;
+		return $this->proxy->options['return_counts'] ? $this->llen($key) : -1;
 	}
 	
 	function brpoplpush($source, $dest, $timeout) {

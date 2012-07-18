@@ -104,6 +104,21 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('RPOP', LOOP_SIZE);
 
+for($i=0; $i<LOOP_SIZE; $i++) {
+	$db->hset('hash_1', 'field_' . $i, $i);
+}
+bench('HSET', LOOP_SIZE);
+
+for($i=0; $i<LOOP_SIZE; $i++) {
+	assert($db->hget('hash_1', 'field_' . $i) == $i);
+}
+bench('HGET', LOOP_SIZE);
+
+for($i=0; $i<LOOP_SIZE; $i++) {
+	$db->sadd('set_1', rand(0, 10));
+}
+bench('SADD', LOOP_SIZE);
+
 // free everything we can
 unset($pdo, $db);
 bench('cleanup');

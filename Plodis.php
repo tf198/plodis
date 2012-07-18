@@ -10,7 +10,7 @@ require_once "Plodis/Proxy.php";
  * Proxy for Redis version 2.6.0 methods.  Dispatches calls to the group class
  * This class is automatically generated from the Redis docs on github.
  *
- * Included modules: connection, generic, string, list, hash, pubsub
+ * Included modules: connection, generic, string, list, hash, set, pubsub
  *
  * @link https://github.com/antirez/redis-doc
  * @package Plodis
@@ -1304,6 +1304,76 @@ class Plodis extends Plodis_Proxy {
     }
 
     /**
+     * Add one or more members to a set
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/sadd SADD
+     *
+     * @param string $key
+     * @param string $member (multiple)
+     * @return integer the number of elements that were added to the set, not including
+     *   all the elements already present into the set.
+     *
+     */
+    public function sadd($key, $member) {
+        if(!is_array($member)) $member = array_slice(func_get_args(), 1);
+        return $this->set->sadd($key, $member);
+    }
+
+    /**
+     * Get the number of members in a set
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/scard SCARD
+     *
+     * @param string $key
+     * @return integer the cardinality (number of elements) of the set, or `0` if `key`
+     *   does not exist.
+     *
+     */
+    public function scard($key) {
+        return $this->set->scard($key);
+    }
+
+    /**
+     * Subtract multiple sets
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/sdiff SDIFF
+     *
+     * @param string $key (multiple)
+     * @return multitype:string list with members of the resulting set.
+     *
+     */
+    public function sdiff($key) {
+        if(!is_array($key)) $key = array_slice(func_get_args(), 0);
+        return $this->set->sdiff($key);
+    }
+
+    /**
+     * Subtract multiple sets and store the resulting set in a key
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/sdiffstore SDIFFSTORE
+     *
+     * @param string $destination
+     * @param string $key (multiple)
+     * @return integer the number of elements in the resulting set.
+     */
+    public function sdiffstore($destination, $key) {
+        if(!is_array($key)) $key = array_slice(func_get_args(), 1);
+        return $this->set->sdiffstore($destination, $key);
+    }
+
+    /**
      * Change the selected database for the current connection
      *
      * @since 1.0.0
@@ -1410,6 +1480,97 @@ class Plodis extends Plodis_Proxy {
     }
 
     /**
+     * Intersect multiple sets
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/sinter SINTER
+     *
+     * @param string $key (multiple)
+     * @return multitype:string list with members of the resulting set.
+     *
+     */
+    public function sinter($key) {
+        if(!is_array($key)) $key = array_slice(func_get_args(), 0);
+        return $this->set->sinter($key);
+    }
+
+    /**
+     * Intersect multiple sets and store the resulting set in a key
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/sinterstore SINTERSTORE
+     *
+     * @param string $destination
+     * @param string $key (multiple)
+     * @return integer the number of elements in the resulting set.
+     */
+    public function sinterstore($destination, $key) {
+        if(!is_array($key)) $key = array_slice(func_get_args(), 1);
+        return $this->set->sinterstore($destination, $key);
+    }
+
+    /**
+     * Determine if a given value is a member of a set
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/sismember SISMEMBER
+     *
+     * @param string $key
+     * @param string $member
+     * @return integer specifically
+     *   
+     *   * `1` if the element is a member of the set.
+     *   * `0` if the element is not a member of the set, or if `key` does not exist.
+     *
+     */
+    public function sismember($key, $member) {
+        return $this->set->sismember($key, $member);
+    }
+
+    /**
+     * Get all the members in a set
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/smembers SMEMBERS
+     *
+     * @param string $key
+     * @return multitype:string all elements of the set.
+     *
+     */
+    public function smembers($key) {
+        return $this->set->smembers($key);
+    }
+
+    /**
+     * Move a member from one set to another
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/smove SMOVE
+     *
+     * @param string $source
+     * @param string $destination
+     * @param string $member
+     * @return integer specifically
+     *   
+     *   * `1` if the element is moved.
+     *   * `0` if the element is not a member of `source` and no operation was performed.
+     *
+     */
+    public function smove($source, $destination, $member) {
+        return $this->set->smove($source, $destination, $member);
+    }
+
+    /**
      * Sort the elements in a list, set or sorted set
      *
      * @since 1.0.0
@@ -1428,6 +1589,57 @@ class Plodis extends Plodis_Proxy {
      */
     public function sort($key, $by=null, $limit=null, $get=null, $order=null, $sorting=null, $store=null) {
         return $this->generic->sort($key, $by, $limit, $get, $order, $sorting, $store);
+    }
+
+    /**
+     * Remove and return a random member from a set
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/spop SPOP
+     *
+     * @param string $key
+     * @return string the removed element, or `null` when `key` does not exist.
+     *
+     */
+    public function spop($key) {
+        return $this->set->spop($key);
+    }
+
+    /**
+     * Get a random member from a set
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/srandmember SRANDMEMBER
+     *
+     * @param string $key
+     * @return string the randomly selected element, or `null` when `key` does not exist.
+     *
+     */
+    public function srandmember($key) {
+        return $this->set->srandmember($key);
+    }
+
+    /**
+     * Remove one or more members from a set
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/srem SREM
+     *
+     * @param string $key
+     * @param string $member (multiple)
+     * @return integer the number of members that were removed from the set, not
+     *   including non existing members.
+     *
+     */
+    public function srem($key, $member) {
+        if(!is_array($member)) $member = array_slice(func_get_args(), 1);
+        return $this->set->srem($key, $member);
     }
 
     /**
@@ -1461,6 +1673,40 @@ class Plodis extends Plodis_Proxy {
     public function subscribe($channels) {
         if(!is_array($channels)) $channels = array_slice(func_get_args(), 0);
         return $this->pubsub->subscribe($channels);
+    }
+
+    /**
+     * Add multiple sets
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/sunion SUNION
+     *
+     * @param string $key (multiple)
+     * @return multitype:string list with members of the resulting set.
+     *
+     */
+    public function sunion($key) {
+        if(!is_array($key)) $key = array_slice(func_get_args(), 0);
+        return $this->set->sunion($key);
+    }
+
+    /**
+     * Add multiple sets and store the resulting set in a key
+     *
+     * @since 1.0.0
+     * @api
+     * @group set
+     * @link http://redis.io/commands/sunionstore SUNIONSTORE
+     *
+     * @param string $destination
+     * @param string $key (multiple)
+     * @return integer the number of elements in the resulting set.
+     */
+    public function sunionstore($destination, $key) {
+        if(!is_array($key)) $key = array_slice(func_get_args(), 1);
+        return $this->set->sunionstore($destination, $key);
     }
 
     /**

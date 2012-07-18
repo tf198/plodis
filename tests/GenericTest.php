@@ -217,6 +217,9 @@ class GenericTest extends BaseTest {
 		$this->assertSame(array('4', '3', '6', '4', '3', '4', '1', '7'), $this->db->sort('test1', 'weight_*', null, null, null, "ALPHA"));
 		
 		$this->assertSame(8, count($this->db->sort('test1', 'weight_*', null, array('#', 'weight_*'))));
+		
+		$this->assertSame(null, $this->db->sort('test1', null, null, null, null, null, 'test2'));
+		$this->assertSame(array('1', '3', '3', '4', '4', '4', '6', '7'), $this->db->lrange('test2', 0, -1));
 	}
 	
 }

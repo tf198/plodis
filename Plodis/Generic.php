@@ -211,6 +211,11 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 			}
 		}
 		
+		if($store) {
+			$fields = array('?', Plodis::TYPE_LIST, 't_0.' . $loc);
+			array_unshift($params, $store);
+		}
+		
 		$sql = "SELECT " . implode(', ', $fields) . " FROM " . implode(' ', $from);
 		
 		$params[] = $key;
@@ -227,13 +232,19 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		
 		//var_dump($sql);
 		
-		$stmt = $this->proxy->db->cachedStmt($sql);
-		$stmt->execute($params);
-		$data = $stmt->fetchAll(PDO::FETCH_NUM);
-		if(count($fields) == 1) {
-			foreach($data as &$row) $row = $row[0];
+		if($store) {
+			$sql = "INSERT INTO <DB> (key, type, item) " . $sql;
+			$stmt = $this->proxy->db->cachedStmt($sql);
+			$stmt->execute($params);
+		} else {
+			$stmt = $this->proxy->db->cachedStmt($sql);
+			$stmt->execute($params);
+			$data = $stmt->fetchAll(PDO::FETCH_NUM);
+			if(count($fields) == 1) {
+				foreach($data as &$row) $row = $row[0];
+			}
+			return $data;
 		}
-		return $data;
 	}
 	
 	function _pattern_alias($pattern, $loc, &$map, &$from, &$params) {

@@ -153,7 +153,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	function rpush($key, $values) {
 		$this->proxy->db->lock();
-		$this->proxy->generic->verify($key, 'list');
+		$this->proxy->generic->verify($key, 'list', 1);
 		
 		$stmt = $this->getStmt('l_insert');
 		foreach($values as $value) {
@@ -167,7 +167,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	function lpush($key, $values) {
 		$this->proxy->db->lock();
-		$this->proxy->generic->verify($key, 'list');
+		$this->proxy->generic->verify($key, 'list', 1);
 		
 		// find the lowest id
 		$row = $this->fetchOne('lpush_index', array($key));

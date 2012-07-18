@@ -175,11 +175,30 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		return Plodis::$types[$data[0]];
 	}
 	
-	function verify($key, $expected) {
+	/**
+	 * @internal
+	 * @param string $key
+	 * @param string $expected
+	 * @param int $levels
+	 * @throws PlodisIncorrectKeyType
+	 */
+	function verify($key, $expected, $levels=0) {
 		if($this->proxy->options['validation_checks'] == false) return;
+		if($this->proxy->options['use_type_cache'] == true) {
+			if(isset($this->type_cache[$key])) {
+				$type = $this->type_cache[$key];
+			} else {
+				$type = $this->type($key);
+				$this->type_cache[$key] = $type;
+			}
+		} else {
+			$type = $this->type($key);
+		}
 		
-		$type = $this->type($key);
 		if($type === null) return;
-		if($type != $expected) throw new PlodisIncorrectKeyType;
+		if($type != $expected) {
+			while($levels--) $this->proxy->db->unlock();
+			throw new PlodisIncorrectKeyType;
+		}
 	}
 }

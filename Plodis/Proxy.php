@@ -50,6 +50,7 @@ class Plodis_Proxy {
 	
 	public $options = array(
 		'validation_checks' => true,
+		'use_type_cache' => true,
 		'return_counts' => true,
 		'return_incr_values' => true,
 		'poll_frequency' => 0.1,
@@ -272,6 +273,18 @@ class Plodis_DB {
 			$this->conn->exec("RELEASE {$savepoint}");
 			//$this->proxy->log("Released {$savepoint}", LOG_WARNING);
 		}
+	}
+	
+	public function discard() {
+		if($this->lock_count) {
+			$this->proxy->log("Discarding all actions in current transaction", LOG_WARNING);
+			$this->conn->rollBack();
+			$this->lock_count = 0;
+		}
+	}
+	
+	public function getLockCount() {
+		return $this->lock_count;
 	}
 	
 	public function debug($key) {

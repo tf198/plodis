@@ -248,17 +248,11 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      */
     public function hset($key, $field, $value) {
     	$this->proxy->db->lock();
-    	/*
-    	$count = $this->executeStmt('h_update', array($value, $key, $field));
-    	if($count == 1) return 0;
-    	
-    	if($count>1) {
-    		$this->proxy->db->unlock(true);
+    	$type = $this->proxy->generic->type($key);
+    	if($type !== null && $type != 'hash') {
+    		$this->db->unlock();
     		throw new PlodisIncorrectKeyType;
     	}
-    	*/
-    	$type = $this->proxy->generic->type($key);
-    	if($type !== null && $type != 'hash') throw new PlodisIncorrectKeyType;
     	
     	$c = $this->executeStmt('hset', array($key, Plodis::TYPE_HASH, $field, $value));
     	$this->proxy->db->unlock();

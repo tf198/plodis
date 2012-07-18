@@ -38,7 +38,7 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      */
     public function sadd($key, $members) {
     	$this->proxy->db->lock();
-    	$this->proxy->generic->verify($key, 'set');
+    	$this->proxy->generic->verify($key, 'set', 1);
     	
     	$stmt = $this->getStmt('sadd');
     	$c = 0;
@@ -67,13 +67,14 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     public function scard($key) {
     	$this->proxy->generic->gc();
     	$this->proxy->db->lock();
-    	$this->proxy->generic->verify($key, 'set');
+    	$this->proxy->generic->verify($key, 'set', 1);
     	$data = $this->fetchOne('scard', array($key));
     	$this->proxy->db->unlock();
     	return (int) $data[0];
     }
 
     private function scustom($sql, $keys) {
+    	$this->proxy->generic->gc();
     	$sql = "SELECT DISTINCT field, type " . $sql;
     	
     	$stmt = $this->proxy->db->cachedStmt($sql);
@@ -91,6 +92,7 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     }
     
     private function scustomstore($dest, $sql, $keys) {
+    	$this->proxy->generic->gc();
     	$sql = "INSERT INTO <DB> (key, field, type) SELECT DISTINCT ?, field, type " . $sql;
     	
     	$stmt = $this->proxy->db->cachedStmt($sql);
@@ -112,7 +114,6 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      *
      */
     public function sdiff($keys) {
-    	$this->proxy->generic->gc();
     	return $this->scustom($this->_sdiff_sql($keys), $keys);
     }
     
@@ -129,7 +130,6 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      * @return integer the number of elements in the resulting set.
      */
     public function sdiffstore($destination, $keys) {
-    	$this->proxy->generic->gc();
     	return $this->scustomstore($destination, $this->_sdiff_sql($keys), $keys);
     }
     
@@ -158,7 +158,6 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      *
      */
     public function sinter($keys) {
-    	$this->proxy->generic->gc();
     	return $this->scustom($this->_sinter_sql($keys), $keys);
     }
     
@@ -175,7 +174,6 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      * @return integer the number of elements in the resulting set.
      */
     public function sinterstore($destination, $keys) {
-    	$this->proxy->generic->gc();
     	return $this->scustomstore($destination, $this->_sinter_sql($keys), $keys);
     }
 
@@ -253,10 +251,12 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      */
     public function smove($source, $destination, $member) {
     	$this->proxy->db->lock();
+    	$this->proxy->generic->verify($source, 'set', 1);
     	$c = $this->executeStmt('srem', array($source, $member));
     	if($c == 1) {
     		$this->sadd($destination, array($member));
     	}
+    	$this->proxy->db->unlock();
     	return $c;
     }
 
@@ -281,6 +281,7 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     		$this->executeStmt('srem', array($data[1]));
     		$result = $data[1];
     	} else {
+    		$this->proxy->generic->verify($key, 'set', 1);
     		$result = null;
     	}
     	$this->proxy->db->unlock();
@@ -302,7 +303,10 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     public function srandmember($key) {
     	$this->proxy->generic->gc();
     	$data = $this->fetchOne('srand', array($key));
-    	if(!$data) return null;
+    	if(!$data) {
+    		$this->proxy->generic->verify($key, 'set');
+    		return null;
+    	}
     	
     	if($data[2] != Plodis::TYPE_SET) throw new PlodisIncorrectKeyType;
     	return $data[1];
@@ -325,7 +329,7 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     public function srem($key, $members) {
     	$this->proxy->generic->gc();
     	$this->proxy->db->lock();
-    	$this->proxy->generic->verify($key, 'set');
+    	$this->proxy->generic->verify($key, 'set', 1);
     	$c = 0;
     	foreach($members as $member) {
     		$c += $this->executeStmt('srem', array($key, $member));

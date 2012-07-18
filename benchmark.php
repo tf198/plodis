@@ -46,7 +46,7 @@ $db->setOption('validation_checks', false);
 bench("Starting loop tests - " . LOOP_SIZE . " iterations");
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->set("{$key}_{$i}", $i+1);
+	$db->set("{$key}_{$i}", $i);
 }
 bench('SET (insert)', LOOP_SIZE);
 
@@ -63,7 +63,8 @@ $db->db->unlock();
 bench('SET (update, locked)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
-	assert($db->get("{$key}_{$i}") == $i);
+ 	assert($db->get("{$key}_{$i}") == $i);
+	//echo $db->get("{$key}_{$i}") . " {$i}" . PHP_EOL;
 }
 bench('GET', LOOP_SIZE);
 

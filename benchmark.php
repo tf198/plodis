@@ -119,6 +119,8 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('SADD', LOOP_SIZE);
 
+assert($db->generic->gc_count < 10);
+
 // free everything we can
 unset($pdo, $db);
 bench('cleanup');

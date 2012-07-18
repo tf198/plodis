@@ -30,7 +30,7 @@ it will throw a ``PlodisNotImplementedError``.
 :List:
    Full 2.6.0 coverage.
 :Sets:
-   Not implemented.
+   Full 2.6.0 coverage.
 :Sorted Sets:
    Not implemented.
 :Pub/Sub:

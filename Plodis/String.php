@@ -46,8 +46,8 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		$this->proxy->db->unlock();
 	}
 	
-	public function get($key) {
-		$this->proxy->generic->gc();
+	public function get($key, $gc=true) {
+		if($gc) $this->proxy->generic->gc();
 		
 		//$row = $this->fetchOne('select_key', array($key));
 		
@@ -69,7 +69,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		$this->proxy->db->lock();
 		foreach($keys as &$key) {
 			try {
-				$key = $this->get($key);
+				$key = $this->get($key, false);
 			} catch(PlodisIncorrectKeyType $e) {
 				$key = null;
 			}
@@ -83,6 +83,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	}
 	
 	function incrby($key, $increment) {
+		$this->proxy->generic->gc();
 		$this->proxy->db->lock();
 		$c = $this->executeStmt('incrby', array($increment, $key));
 		

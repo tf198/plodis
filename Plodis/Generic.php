@@ -24,6 +24,8 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	
 	private $alarm = 0;
 	
+	public $gc_count = 0;
+	
 	function del($keys) {
 		$c = 0;
 		foreach($keys as $key) {
@@ -96,6 +98,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		$now = microtime(true);
 		if($now < $this->alarm && $force == false) return;
 		
+		$this->gc_count++;
 		//fputs(STDERR, "GC\n");
 		$this->executeStmt('expire', array($now));
 		

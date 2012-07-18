@@ -90,6 +90,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
     		if($item[2] != Plodis::TYPE_HASH) throw new PlodisIncorrectKeyType;
     		return $item[1];
     	} else {
+    		$this->proxy->generic->verify($key, 'hash');
     		return null;
     	}
     }
@@ -280,7 +281,6 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
     public function hsetnx($key, $field, $value) {
     	$this->proxy->generic->gc();
     	$c = $this->executeStmt('hsetnx', array($key, Plodis::TYPE_HASH, $field, $value));
-    	//$this->proxy->db->unlock();
     	return $c;
     }
 

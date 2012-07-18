@@ -73,6 +73,32 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     	return (int) $data[0];
     }
 
+    private function scustom($sql, $keys) {
+    	$sql = "SELECT DISTINCT field, type " . $sql;
+    	
+    	$stmt = $this->proxy->db->cachedStmt($sql);
+    	$stmt->execute($keys);
+    	$data = $stmt->fetchAll(PDO::FETCH_NUM);
+    	
+    	if($data) {
+    	  	if($data[0][1] != Plodis::TYPE_SET) throw new PlodisIncorrectKeyType;
+    		foreach($data as &$row) $row = $row[0];
+    		return $data;
+    	} else {
+    		$this->proxy->generic->verify($keys[0], 'set');
+    		return array();
+    	}
+    }
+    
+    private function scustomstore($dest, $sql, $keys) {
+    	$sql = "INSERT INTO <DB> (key, field, type) SELECT DISTINCT ?, field, type " . $sql;
+    	
+    	$stmt = $this->proxy->db->cachedStmt($sql);
+    	array_unshift($keys, $dest);
+    	$stmt->execute($keys);
+    	return $stmt->rowCount();
+    }
+    
     /**
      * Subtract multiple sets
      *
@@ -87,25 +113,7 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      */
     public function sdiff($keys) {
     	$this->proxy->generic->gc();
-    	$sql = "SELECT field, type " . $this->_sdiff($keys);
-    	
-    	$stmt = $this->proxy->db->cachedStmt($sql);
-    	$stmt->execute($keys);
-    	$data = $stmt->fetchAll(PDO::FETCH_NUM);
-    	if($data && $data[0][1] != Plodis::TYPE_SET) throw new PlodisIncorrectKeyType;
-    	foreach($data as &$row) $row = $row[0];
-    	return $data;
-    }
-
-    private function _sdiff($keys) {
-    	// have to construct this depending on number of args
-    	$c = count($keys);
-    	$sql = "FROM <DB> WHERE key=?";
-    	for($i=1; $i<$c; $i++) {
-    		$sql .= " AND field NOT IN (SELECT field FROM <DB> WHERE key=?)";
-    	}
-    	$sql .= " ORDER BY id";
-    	return $sql;
+    	return $this->scustom($this->_sdiff_sql($keys), $keys);
     }
     
     /**
@@ -122,14 +130,21 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      */
     public function sdiffstore($destination, $keys) {
     	$this->proxy->generic->gc();
-    	$sql = "INSERT INTO <DB> (key, field, type) SELECT ?, field, type " . $this->_sdiff($keys);
-    	
-    	$stmt = $this->proxy->db->cachedStmt($sql);
-    	array_unshift($keys, $destination);
-    	$stmt->execute($keys);
-    	return $stmt->rowCount();
+    	return $this->scustomstore($destination, $this->_sdiff_sql($keys), $keys);
     }
-
+    
+    private function _sdiff_sql($keys) {
+    	// have to construct this depending on number of args
+    	$c = count($keys);
+    	$sql = "FROM <DB> WHERE key=?";
+    	for($i=1; $i<$c; $i++) {
+    		$sql .= " AND field NOT IN (SELECT field FROM <DB> WHERE key=?)";
+    	}
+    	$sql .= " ORDER BY id";
+    	return $sql;
+    }
+    
+    
     /**
      * Intersect multiple sets
      *
@@ -143,9 +158,10 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      *
      */
     public function sinter($keys) {
-    	throw new PlodisNotImplementedError;
+    	$this->proxy->generic->gc();
+    	return $this->scustom($this->_sinter_sql($keys), $keys);
     }
-
+    
     /**
      * Intersect multiple sets and store the resulting set in a key
      *
@@ -155,13 +171,25 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      * @link http://redis.io/commands/sinterstore SINTERSTORE
      *
      * @param string $destination
-     * @param string $key (multiple)
+     * @param string $keys (multiple)
      * @return integer the number of elements in the resulting set.
      */
-    public function sinterstore($destination, $key) {
-    	throw new PlodisNotImplementedError;
+    public function sinterstore($destination, $keys) {
+    	$this->proxy->generic->gc();
+    	return $this->scustomstore($destination, $this->_sinter_sql($keys), $keys);
     }
 
+    private function _sinter_sql($keys) {
+    	$c = count($keys);
+    	$sql = "";
+    	for($i=1; $i<$c; $i++) {
+    		$inner = "SELECT field FROM <DB> WHERE key=?";
+    		if($sql) $inner .= " AND field IN ({$sql})";
+    		$sql = $inner;
+    	}
+    	return "FROM <DB> WHERE key=? AND field IN ({$sql}) ORDER BY id";
+    }
+    
     /**
      * Determine if a given value is a member of a set
      *
@@ -224,7 +252,12 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      *
      */
     public function smove($source, $destination, $member) {
-    	throw new PlodisNotImplementedError;
+    	$this->proxy->db->lock();
+    	$c = $this->executeStmt('srem', array($source, $member));
+    	if($c == 1) {
+    		$this->sadd($destination, array($member));
+    	}
+    	return $c;
     }
 
     /**
@@ -292,6 +325,7 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     public function srem($key, $members) {
     	$this->proxy->generic->gc();
     	$this->proxy->db->lock();
+    	$this->proxy->generic->verify($key, 'set');
     	$c = 0;
     	foreach($members as $member) {
     		$c += $this->executeStmt('srem', array($key, $member));
@@ -308,12 +342,13 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      * @group set
      * @link http://redis.io/commands/sunion SUNION
      *
-     * @param string $key (multiple)
+     * @param string $keys (multiple)
      * @return multitype:string list with members of the resulting set.
      *
      */
-    public function sunion($key) {
-    	throw new PlodisNotImplementedError;
+    public function sunion($keys) {
+    	$this->proxy->generic->gc();
+    	return $this->scustom($this->_sunion_sql($keys), $keys);
     }
 
     /**
@@ -325,11 +360,20 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
      * @link http://redis.io/commands/sunionstore SUNIONSTORE
      *
      * @param string $destination
-     * @param string $key (multiple)
+     * @param string $keys (multiple)
      * @return integer the number of elements in the resulting set.
      */
-    public function sunionstore($destination, $key) {
-    	throw new PlodisNotImplementedError;
+    public function sunionstore($destination, $keys) {
+    	$this->proxy->generic->gc();
+    	return $this->scustomstore($destination, $this->_sunion_sql($keys), $keys);
+    }
+    
+    private function _sunion_sql($keys) {
+    	$sql = "FROM <DB> WHERE key=?";
+    	for($i=1, $c=count($keys); $i<$c; $i++) {
+    		$sql .= " OR key=?";
+    	}
+    	return $sql . " ORDER BY id";
     }
 
 }

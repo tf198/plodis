@@ -25,7 +25,7 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testKeys() {
-		$this->assertSame(array('check_1', 'check_2', 'check_3', 'check_4'), $this->db->keys());
+		$this->assertSame($this->check_keys, $this->db->keys());
 		
 		$loc = new Plodis(':memory:');
 		

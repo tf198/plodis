@@ -25,6 +25,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	#ifdef REDIS_1_0_0
 	function llen($key, $verified=false) {
+		$this->proxy->generic->gc();
 		// this is called by push ops so cache the verification if possible
 		if(!$verified) $this->proxy->generic->verify($key, 'list');
 		
@@ -51,6 +52,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	private function _lindex($key, $index) {
+		$this->proxy->generic->gc();
 		$s = 'l_forward';
 		if($index < 0) {
 			$s = 'l_reverse';
@@ -63,6 +65,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	function ltrim($key, $start, $end) {
 		#$this->proxy->log("Starting {$start}, {$end}", LOG_WARNING);
+		$this->proxy->generic->gc();
 		$this->proxy->db->lock();
 		if($start > 0) {
 			$c = $this->executeStmt('ltrim_l', array($key, $start));
@@ -101,6 +104,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function lrange($key, $start, $stop) {
+		$this->proxy->generic->gc();
 		$s = 'l_forward';
 		$flip = false;
 		$slice = false;
@@ -136,6 +140,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	function lrem($key, $count, $value) {
+		$this->proxy->generic->gc();
 		$s = 'lrem_forward';
 		if($count < 0) {
 			$count = -$count;
@@ -188,7 +193,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	}
 	
 	private function _pop($key, $type, $timeout=-1) {
-	
+		$this->proxy->generic->gc();
 		$freq = $this->proxy->options['poll_frequency'];
 		$us = $freq * 1000000; // microseconds
 	

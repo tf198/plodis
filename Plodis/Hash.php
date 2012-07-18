@@ -15,12 +15,13 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
 
 	protected $sql = array(
 		'h_select'		=> 'SELECT field, item, type FROM <DB> WHERE key=? ORDER BY id',
-		'h_insert' 		=> 'INSERT INTO <DB> (key, type, field, item) VALUES (?, ?, ?, ?)',
+		'hset' 			=> 'INSERT OR REPLACE INTO <DB> (key, type, field, item) VALUES (?, ?, ?, ?)',
 		'h_update' 		=> 'UPDATE <DB> SET item=? WHERE key=? AND field=?',
 		'h_delete'		=> 'DELETE FROM <DB> WHERE key=? AND field=?',
 		'hlen'			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
 		'hget'			=> 'SELECT id, item, type FROM <DB> WHERE key=? AND field=?',
 		'hincrby'		=> 'UPDATE <DB> SET item=item+? WHERE key=? AND field=?',
+		'hsetnx'		=> 'INSERT OR IGNORE INTO <DB> (key, type, field, item) VALUES (?, ?, ?, ?)',
 	);
 	
     /**
@@ -36,6 +37,8 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hdel($key, $fields) {
+    	$this->proxy->generic->gc();
+    	$this->proxy->generic->verify($key, 'hash');
     	$c = 0;
     	foreach($fields as $field) {
     		$c += $this->executeStmt('h_delete', array($key, $field));
@@ -56,10 +59,14 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hexists($key, $field) {
-    	if($this->hget($key, $field) === null) {
-    		return 0;
-    	} else {
+    	$this->proxy->generic->gc();
+    	$row = $this->fetchOne('hget', array($key, $field));
+    	if($row) {
+    		if($row[2] != Plodis::TYPE_HASH) throw new PlodisIncorrectKeyType;
     		return 1;
+    	} else {
+    		$this->proxy->generic->verify($key, 'hash');
+    		return 0;
     	}
     }
 
@@ -76,6 +83,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hget($key, $field) {
+    	$this->proxy->generic->gc();
     	$item = $this->fetchOne('hget', array($key, $field));
     	
     	if($item) {
@@ -98,6 +106,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hgetall($key) {
+    	$this->proxy->generic->gc();
     	$all = $this->fetchAll('h_select', array($key));
     	$result = array();
     	foreach($all as $row) $result[$row[0]] = $row[1];
@@ -137,10 +146,11 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hincrbyfloat($key, $field, $increment) {
+    	$this->proxy->generic->gc();
     	$this->proxy->db->lock();
     	$c = $this->executeStmt('hincrby', array($increment, $key, $field));
     	if($c==0) {
-    		$this->executeStmt('h_insert', array($key, Plodis::TYPE_HASH, $field, $increment));
+    		$this->executeStmt('hset', array($key, Plodis::TYPE_HASH, $field, $increment));
     		$result = (float) $increment;
     	} else {
     		$result = ($this->proxy->options['return_incr_values']) ? (float) $this->hget($key, $field) : null;
@@ -161,6 +171,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hkeys($key) {
+    	$this->proxy->generic->gc();
     	return $this->fetchAll('h_select', array($key), 0);
     }
 
@@ -176,6 +187,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hlen($key) {
+    	$this->proxy->generic->gc();
     	$data = $this->fetchOne('hlen', array($key));
     	return (int) $data[0];
     }
@@ -235,6 +247,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      */
     public function hset($key, $field, $value) {
     	$this->proxy->db->lock();
+    	/*
     	$count = $this->executeStmt('h_update', array($value, $key, $field));
     	if($count == 1) return 0;
     	
@@ -242,10 +255,13 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
     		$this->proxy->db->unlock(true);
     		throw new PlodisIncorrectKeyType;
     	}
+    	*/
+    	$type = $this->proxy->generic->type($key);
+    	if($type !== null && $type != 'hash') throw new PlodisIncorrectKeyType;
     	
-    	$this->executeStmt('h_insert', array($key, Plodis::TYPE_HASH, $field, $value));
+    	$c = $this->executeStmt('hset', array($key, Plodis::TYPE_HASH, $field, $value));
     	$this->proxy->db->unlock();
-    	return 1;
+    	return ($type === null) ? 1 : 0;
     }
 
     /**
@@ -262,15 +278,10 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hsetnx($key, $field, $value) {
-    	$this->proxy->db->lock();
-    	if($this->hget($key, $field) !== null) {
-    		$this->proxy->db->unlock();
-    		return 0;
-    	}
-    	
-    	$this->executeStmt('h_insert', array($key, Plodis::TYPE_HASH, $field, $value));
-    	$this->proxy->db->unlock();
-    	return 1;
+    	$this->proxy->generic->gc();
+    	$c = $this->executeStmt('hsetnx', array($key, Plodis::TYPE_HASH, $field, $value));
+    	//$this->proxy->db->unlock();
+    	return $c;
     }
 
     /**
@@ -285,6 +296,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hvals($key) {
+    	$this->proxy->generic->gc();
     	return $this->fetchAll('h_select', array($key), 1);
     }
 

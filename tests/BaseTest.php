@@ -9,6 +9,8 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 	 */
 	public $db;
 
+	public $check_keys = array('check_1', 'check_2', 'check_3', 'check_4', 'check_5');
+	
 	function setUp() {
 		$this->db = new Plodis(new PDO('sqlite::memory:'));
 		
@@ -17,12 +19,14 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 		$this->db->rpush('check_3', 'three', 'four');
 		$this->db->hset('check_4', 'one', '1');
 		$this->db->hset('check_4', 'two', '2');
+		$this->db->sadd('check_5', 'a', 'b', 'c');
 	}
 	
 	function tearDown() {
 		$this->assertSame(array('one', 'two'), $this->db->mget('check_1', 'check_2'));
 		$this->assertSame(array('two', 'one', 'three', 'four'), $this->db->lrange('check_3', 0, -1));
 		$this->assertSame(array('1', '2'), $this->db->hvals('check_4'));
+		$this->assertSame(array('a', 'b', 'c'), $this->db->smembers('check_5'));
 	}
 	
 	function assertThrows($message, $obj, $method, $param) {

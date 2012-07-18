@@ -168,7 +168,7 @@ class Plodis_DB {
 	 * @var multitype:string
 	 */
 	private static $create_sql = array(
-		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, key TEXT, field TEXT, weight NUMERIC, item BLOB, expiry NUMERIC)',
+		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, key TEXT, field TEXT, weight NUMERIC, item BLOB, expiry NUMERIC, UNIQUE(key, field))',
 		'CREATE INDEX IF NOT EXISTS <DB>_key ON <DB> (key)',
 		'CREATE INDEX IF NOT EXISTS <DB>_field ON <DB> (key, field)',
 		'CREATE INDEX IF NOT EXISTS <DB>_weight ON <DB> (key, weight)',
@@ -285,7 +285,7 @@ class Plodis_DB {
 	}
 	
 	public function explain($sql) {
-		$stmt = $this->conn->prepare('EXPLAIN QUERY PLAN ' . $sql);
+		$stmt = $this->conn->prepare('EXPLAIN QUERY PLAN ' . str_replace('<DB>', $this->db_table, $sql));
 		$stmt->execute();
 		$data = $stmt->fetchAll(PDO::FETCH_COLUMN, 3);
 		fputs(STDERR, "\n-- {$sql} --\n");

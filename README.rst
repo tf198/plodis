@@ -22,7 +22,7 @@ Built from Redis 2.6.0 API with certain modules disabled and a few gaps.  Wherev
 it will throw a ``PlodisNotImplementedError``.
 
 :Generic (Keys):
-   Partial coverage. Need to finish 2.0.0.
+   Full 2.6.0 coverage except DUMP, RESTORE, MIGRATE and OBJECT.
 :Strings:
    Full 2.6.0 coverage.
 :Hashes:

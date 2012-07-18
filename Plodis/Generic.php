@@ -259,11 +259,6 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		return $k;
 	}
 	
-	function _sort_pattern($pattern) {
-		$pattern = 
-		$from = "INNER JOINT <DB> ON key=replace(?, '*', ?)";
-	}
-	
 	function type($key) {
 		$data = $this->fetchOne('type', array($key));
 		

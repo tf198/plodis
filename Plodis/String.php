@@ -84,7 +84,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 		// check for list/hash
 		if($c > 1) {
 			$this->proxy->db->unlock(true);
-			throw new RuntimeException('Operation against a key holding the wrong kind of value');
+			throw new PlodisIncorrectKeyType;
 		}
 		
 		if($c == 0) {

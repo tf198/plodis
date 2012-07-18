@@ -116,7 +116,13 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	}
 	
 	function move($key, $db) {
-		throw new PlodisNotImplementedError;
+		$this->proxy->db->lock();
+		// TODO: finish this
+		$sql = "INSERT INTO plodis_{$db} SELECT * FROM <DB> WHERE key=?";
+		$stmt = $this->proxy->db->cachedStmt($sql);
+		$stmt->execute(array($key));
+		$this->del($key);
+		$this->proxy->db->unlock();
 	}
 	
 	function object($subcommand, $arguments=null) {
@@ -164,7 +170,87 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	}
 	
 	function sort($key, $by=null, $limit=null, $get=null, $order=null, $sorting=null, $store=null) {
-		throw new PlodisNotImplementedError;
+		switch($this->type($key)) {
+			case 'set':
+			case 'zset':
+				$loc = 'field';
+				break;
+			default:
+				$loc = 'item';
+		}
+		
+		$map = array('_' => 't_0');
+		
+		$fields = array('t_0.' . $loc);
+		$from = array('<DB> t_0');
+		$params = array();
+		if($by) {
+			$parts = explode('->', $by);
+			if(count($parts) == 1) $parts[] = 'item';
+			$k = $this->_pattern_alias($parts[0], $loc, $map, $from, $params);
+			$by = "{$k}.{$parts[1]}";
+		} else {
+			$by = "t_0.{$loc}";
+		}
+		
+		if($sorting != "ALPHA") {
+			$by = "CAST({$by} AS FLOAT)";
+		}
+		
+		if($get) {
+			$fields = array();
+			for($i=0; $i<count($get); $i++) {
+				if($get[$i] == '#') {
+					$fields[] = 't_0.' . $loc;
+				} else {
+					$parts = explode('->', $get[$i]);
+					if(count($parts) == 1) $parts[] = 'item';
+					$k = $this->_pattern_alias($parts[0], $loc, $map, $from, $params);
+					$fields[] = "{$k}.{$parts[1]}";
+				}
+			}
+		}
+		
+		$sql = "SELECT " . implode(', ', $fields) . " FROM " . implode(' ', $from);
+		
+		$params[] = $key;
+		$sql .= " WHERE t_0.key=?";
+		
+		$sql .= " ORDER BY {$by}";
+		
+		// ASC DESC
+		if($order) $by .= " " . $order;
+		
+		// TODO: SORTING ignored
+		
+		if($limit) $sql .= " LIMIT {$limit[0]}, {$limit[1]}";
+		
+		//var_dump($sql);
+		
+		$stmt = $this->proxy->db->cachedStmt($sql);
+		$stmt->execute($params);
+		$data = $stmt->fetchAll(PDO::FETCH_NUM);
+		if(count($fields) == 1) {
+			foreach($data as &$row) $row = $row[0];
+		}
+		return $data;
+	}
+	
+	function _pattern_alias($pattern, $loc, &$map, &$from, &$params) {
+		if(!isset($map[$pattern])) {
+			$k = 't_' . count($map);
+			$map[$pattern] = $k;
+			$from[] = "LEFT JOIN <DB> {$k} ON {$k}.key=REPLACE(?, '*', t_0.{$loc})";
+			$params[] = $pattern;
+		} else {
+			$k = $map[$pattern];
+		}
+		return $k;
+	}
+	
+	function _sort_pattern($pattern) {
+		$pattern = 
+		$from = "INNER JOINT <DB> ON key=replace(?, '*', ?)";
 	}
 	
 	function type($key) {

@@ -206,4 +206,17 @@ class GenericTest extends BaseTest {
 		$this->assertGreaterThan(5, $diff);
 	}
 	
+	function testSort() {
+		$this->db->rpush('test1', 1, 4, 3, 6, 7, 4, 3, 4);
+		$this->db->mset(array('weight_1' => 10, 'weight_7' => 2));
+						
+		$this->assertSame(array('1', '3', '3', '4', '4', '4', '6', '7'), $this->db->sort('test1'));
+		
+		$this->assertSame(array('4', '3', '6', '4', '3', '4', '7', '1'), $this->db->sort('test1', 'weight_*'));
+		
+		$this->assertSame(array('4', '3', '6', '4', '3', '4', '1', '7'), $this->db->sort('test1', 'weight_*', null, null, null, "ALPHA"));
+		
+		$this->assertSame(8, count($this->db->sort('test1', 'weight_*', null, array('#', 'weight_*'))));
+	}
+	
 }

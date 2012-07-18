@@ -24,7 +24,7 @@ it will throw a ``PlodisNotImplementedError``.
 :Generic (Keys):
    Partial coverage. Need to finish 2.0.0.
 :Strings:
-   Full coverage up to 2.0.0.
+   Full 2.6.0 coverage.
 :Hashes:
    Full 2.6.0 coverage.
 :List:
@@ -72,7 +72,7 @@ Implementation
 ==============
 Each Plodis instance is backed by a single SQLite data file with as many optomisations turned on as possible so there is the potential for data
 loss in the event of a crash (it should be possible to set some guarantees using the Server module, its just a file after all, but I haven't got round
-to it yet).  Every method should be **fully atomic**
+to it yet).
 
 TODO
 ====

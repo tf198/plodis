@@ -47,22 +47,16 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	}
 	
 	public function get($key, $gc=true) {
-		if($gc) $this->proxy->generic->gc();
-		
-		//$row = $this->fetchOne('select_key', array($key));
-		
-		// optomise this one to cut out alot of the abstraction
-		$stmt = $this->proxy->db->cachedStmt($this->sql['select_key']);
-		$stmt->execute(array($key));
-		$row = $stmt->fetch(PDO::FETCH_NUM);
-		$stmt->closeCursor();
-		
-		if(!$row) {
+		if($gc)$this->proxy->generic->gc();
+		$item = $this->fetchOne('select_key', array($key));
+		 
+		if($item) {
+			if($item[1] != Plodis::TYPE_STRING) throw new PlodisIncorrectKeyType;
+			return $item[0];
+		} else {
+			$this->proxy->generic->verify($key, 'string');
 			return null;
 		}
-		if($row[1] != Plodis::TYPE_STRING) throw new PlodisIncorrectKeyType;
-		
-		return $row[0];
 	}
 	
 	function mget($keys) {

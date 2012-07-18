@@ -169,7 +169,7 @@ class Plodis_DB {
 	 * @var multitype:string
 	 */
 	private static $create_sql = array(
-		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, key TEXT, field TEXT, weight NUMERIC, item BLOB, expiry NUMERIC, UNIQUE(key, field))',
+		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, key TEXT, field TEXT, weight NUMERIC, item TEXT, expiry NUMERIC, UNIQUE(key, field))',
 		'CREATE INDEX IF NOT EXISTS <DB>_key ON <DB> (key)',
 		'CREATE INDEX IF NOT EXISTS <DB>_field ON <DB> (key, field)',
 		'CREATE INDEX IF NOT EXISTS <DB>_weight ON <DB> (key, weight)',

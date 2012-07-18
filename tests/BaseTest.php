@@ -27,7 +27,7 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 		$this->assertSame(array('two', 'one', 'three', 'four'), $this->db->lrange('check_3', 0, -1));
 		$this->assertSame(array('1', '2'), $this->db->hvals('check_4'));
 		$this->assertSame(array('a', 'b', 'c'), $this->db->smembers('check_5'));
-		$this->assertSame(0, $this->db->db->getLockCount());
+		$this->assertSame(0, $this->db->db->getLockCount(), "Transaction locks remaining");
 	}
 	
 	function assertThrows($message, $obj, $method, $param) {

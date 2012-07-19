@@ -48,16 +48,25 @@ class Plodis_Pubsub extends Plodis_Group implements Redis_Pubsub_2_6_0 {
 	function publish($channel, $message) {
 		$subscribers = $this->proxy->smembers(self::CHANNEL_PREFIX . $channel);
 		foreach($subscribers as $subscriber) {
-			$this->proxy->rpush(self::SUBSCRIBER_PREFIX . $subscriber, array($message));
+			$this->send($subscriber, $message);
 		}
 		//$this->debug();
 		return count($subscribers);
 	}
 	
-	function broadcast($message) {
-		foreach($this->channels() as $channel=>$subscribers) {
-			$this->publish($channel, $message);
+	function broadcast($filter, $message) {
+		$subscribers = array();
+		foreach(array_keys($this->channels()) as $channel) {
+			$subscribers += $this->proxy->smembers(self::CHANNEL_PREFIX . $channel);
 		}
+		var_dump($subscribers);
+		foreach(array_unique($subscribers) as $subscriber) {
+			$this->send($subscriber, $message);
+		}
+	}
+	
+	function send($subscriber, $message) {
+		$this->proxy->rpush(self::SUBSCRIBER_PREFIX . $subscriber, array($message));
 	}
 	
 	function channels() {

@@ -8,6 +8,7 @@
 			.full {display: block; margin: 2px 1em;}
 			#conversation { height: 200px; border: 1px solid #999; padding: 0.5em; background-color: white; margin: 0.5em; white-space: pre; overflow: auto;}
 			#text { margin: 0.5em; }
+			.user: {color: green; }
 		</style>
 	</head>
 	<body>
@@ -55,6 +56,7 @@
 $(document).ready(init);
 
 var user;
+var current_channel;
 var api = "webchat_api.php";
 
 // set up all the event handlers and start polling
@@ -72,6 +74,7 @@ function init() {
 	
 	$('#channels').change(function () {
 		join(this.value);
+		$('#text-input').focus();
 	});
 	
 	$(window).unload(function() {
@@ -86,12 +89,18 @@ function logout() {
 }
 
 function login() {
-	user = prompt('Enter your username');
+	user = prompt('Enter a username');
 	if(!user) {
 		$('#conversation').append("No user - unable to continue\n");
 	}
 	$('a.brand').append(' (' + user + ')');
-	get_info();
+	
+	$.get(api, {'user': user, 'action': 'login'}, function(data) {
+		console.log(data);
+		set_channel(data['data']['channel']);
+		set_channels(data['data']['channels']);
+	})
+	
 	poll();
 }
 
@@ -102,60 +111,88 @@ function send() {
 		console.log("Message sent");
 	});
 	input.val('');
+	input.focus();
 	return false;
 }
 
 // join a channel
 function join(channel) {
-	$.get(api, {'user': user, 'action': 'join', 'channel': channel}, get_info);
+	$.get(api, {'user': user, 'action': 'join', 'channel': channel});
+	set_channel(channel);
 }
 
-// get info about current subscription
-function get_info() {
-	$('#users').empty();
+function set_users(users) {
+	ul = $('#users');
+	ul.empty();
+	for(i=0; i<users.length; i++) {
+		s = users[i];
+		if(users[i] == user) {
+			s = "<b>" + s + "</b>"; 
+		}
+		ul.append('<li>' + s + '</li>');
+	}
+}
+
+function set_channels(channels) {
 	$('#channels').empty();
-	
-	$.get(api, {'user': user, 'action': 'info'},
-			function (data) {
-				console.log(data);
-				for(i in data['message']['channels']) {
-					s = 'value="' + i + '"';
-					if(i == data['message']['channel']) s += ' selected';
-					$('#channels').append('<option ' + s + '>' + [i] + '</option>');
-				}
-				for(i in data['message']['subscribers']) {
-					s = data['message']['subscribers'][i];
-					if(data['message']['subscribers'][i] == user) {
-						s = "<b>" + s + "</b>"; 
-					}
-					$('#users').append('<li>' + s + '</li>');
-				}
-				console.log($('#channel').html());
-				$('#channel').html('Channel ' + data['message']['channel']);
-				console.log(data);
-			}
-	)
+	for(i=0; i<channels.length; i++) {
+		s = 'value="' + channels[i] + '"';
+		if(channels[i] == current_channel) s += ' selected';
+		$('#channels').append('<option ' + s + '>' + channels[i] + '</option>');
+	}
+}
+
+function set_channel(channel) {
+	current_channel = channel;
+	text = channel ? "Channel " + channel : "No channel selected";
+	$('#channel').html(text);
 }
 
 // poll the server for data
 function poll(data) {
-	console.log(new Date());
-	div = $('#conversation');
 	try {
-		if(data && data['message']) {
-			line = data['message']['user'] + ": " + data['message']['message'];
-			div.append(line + "\n");
+		if(data && data['type']) {
+			item = data['data'];
+			switch(data['type']) {
+			case 1: // user message
+				output('<span class="user">' + data['user'] + "</span>: " + item);
+				break
+			case 2: // updated user list
+				set_users(item);
+				break;
+			case 3: // updated channel list
+				//console.log(data);
+				set_channels(item);
+				break;
+			case 0: // general message
+				console.log(item);
+				break
+			case -1:
+				console.log(data);
+				output('Error: ' + item);
+			default:
+				console.log("Unknown type", data);
+			}
+			
+		} else {
+			console.log("No data", data);	
 		}
 	} catch(e) {
-		div.append(e + "\n");
+		console.log(e, data);
+		output(e);
 	}
-	div.prop({ 'scrollTop': div.prop("scrollHeight") });
 	
-	if(!user) {
-		div.append("No current user\n");
+	if(!user) { // pause polling
+		output("No current user");
 		return;
 	}
-	$.ajax({'url': api, 'data': {'user': user}, 'success': poll, 'error': poll});
+	$.ajax({'url': api, 'data': {'user': user}, 'success': poll, 'error': function() {output('Error occured');}});
+}
+
+function output(line) {
+	div = $('#conversation');
+	div.append(line + "\n");
+	div.prop({ 'scrollTop': div.prop("scrollHeight") });
 }
 	</script>
 </html>

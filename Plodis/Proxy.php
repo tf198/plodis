@@ -1,5 +1,5 @@
 <?php
-require_once "Plodis/Group.php";
+require_once "Group.php";
 
 define('PLODIS_BASE', dirname(dirname(__FILE__)));
 
@@ -100,7 +100,7 @@ class Plodis_Proxy {
 		if($klass === null) {
 			$title = ucfirst($name);
 			$klass = "Plodis_{$title}";
-			$file = "Plodis/{$title}.php";
+			$file = PLODIS_BASE . "/Plodis/{$title}.php";
 			if(!is_readable($file)) throw new RuntimeException("Unknown module: {$name}");
 			require_once $file;
 		}

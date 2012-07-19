@@ -7,37 +7,65 @@ class Plodis_Pubsub extends Plodis_Group implements Redis_Pubsub_2_6_0 {
 	
 	const SUBSCRIBER_PREFIX = '_subscriber_';
 	
-	public $uid;
+	const CHANNEL_LIST = '__channel_list__';
+	
+	private $uid;
 	
 	function __construct($proxy) {
 		parent::__construct($proxy);
 		$this->uid = uniqid();
 	}
 	
+	function setuid($uid) {
+		$this->uid = $uid;
+	}
+	
+	function getuid() {
+		return $this->uid;
+	}
+	
 	function subscribe($channels) {
 		if(!is_array($channels)) $channels = func_get_args();
 	
 		foreach($channels as $channel) {
-			$this->proxy->list->rpush(self::CHANNEL_PREFIX . $channel, array($this->uid));
-			//$this->publish($channel, "{$this->uid} joined channel {$channel}");
+			$this->proxy->sadd(self::CHANNEL_PREFIX . $channel, $this->uid);
+			$this->proxy->hincrby(self::CHANNEL_LIST, $channel, 1);
 		}
 	}
 	
 	function unsubscribe($channels=array()) {
 		if(!is_array($channels)) $channels = func_get_args();
-	
+		
 		foreach($channels as $channel) {
-			$this->proxy->list->lrem(self::CHANNEL_PREFIX . $channel, 1, $this->uid);
+			$c = $this->proxy->srem(self::CHANNEL_PREFIX . $channel, $this->uid);
+			if($c) {
+				$c = $this->proxy->hincrby(self::CHANNEL_LIST, $channel, -1);
+				if($c == 0) $this->proxy->hdel(self::CHANNEL_LIST, $channel);
+			}
 		}
 	}
 	
 	function publish($channel, $message) {
-		$subscribers = $this->proxy->list->lrange(self::CHANNEL_PREFIX . $channel, 0, -1);
+		$subscribers = $this->proxy->smembers(self::CHANNEL_PREFIX . $channel);
 		foreach($subscribers as $subscriber) {
-			$this->proxy->list->rpush(self::SUBSCRIBER_PREFIX . $subscriber, array($message));
+			$this->proxy->rpush(self::SUBSCRIBER_PREFIX . $subscriber, array($message));
 		}
 		//$this->debug();
 		return count($subscribers);
+	}
+	
+	function broadcast($message) {
+		foreach($this->channels() as $channel=>$subscribers) {
+			$this->publish($channel, $message);
+		}
+	}
+	
+	function channels() {
+		return $this->proxy->hgetall(self::CHANNEL_LIST);
+	}
+	
+	function subscribers($channel) {
+		return $this->proxy->smembers(self::CHANNEL_PREFIX . $channel);
 	}
 	
 	function psubscribe($patterns) {

@@ -41,7 +41,7 @@ class PubSubTest extends BaseTest {
 		$pub->publish('test-channel-1', 'four');
 		$this->assertSame('four', $sub1->pubsub->poll());
 		$this->assertSame('four', $sub2->pubsub->poll());
-		$this->assertSame('four', $sub2->pubsub->poll());
+		$this->assertSame(null, $sub2->pubsub->poll());
 		
 		// all digested
 		$this->assertSame(null, $sub1->pubsub->poll());

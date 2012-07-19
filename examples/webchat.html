@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang='en'>
+	<head>
+		<title>Example Plodis Webchat</title>
+		<link type="text/css" rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css"/>
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+		<style type="text/css">
+			.full {display: block; margin: 2px 1em;}
+			#conversation { height: 200px; border: 1px solid #999; padding: 0.5em; background-color: white; margin: 0.5em; white-space: pre; overflow: auto;}
+			#text { margin: 0.5em; }
+		</style>
+	</head>
+	<body>
+		<div class="navbar">
+			<div class="navbar-inner">
+				<div class="container">
+					<a class="brand" href="#">Plodis WebChat</a>
+				</div>
+			</div>
+		</div>
+		
+		<div class="container">
+			<div class="row">
+				<div class="span8">
+					<div class="well">
+						<h3 id="channel">No channel</h3>
+						<div id="conversation"></div>
+						<div id="text">
+							<div class="form-inline">
+								<input id="text-input" type="text" class="span6"/> <button class="btn" onclick="send()">Send</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="span4">
+					<div class="well">
+						<h3>Channels</h3>
+						<select multiple class="disabled" id="channels">
+							<option>Loading channels...</option>
+						</select>
+						<label>New Channel</label>
+						<input type="text" id="new-channel"/>
+					</div>
+					<div class="well">
+						<h3>Users</h3>
+						<ul id="users">
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+	
+	<script type="text/javascript">
+$(document).ready(init);
+
+var user;
+var api = "webchat_api.php";
+
+// set up all the event handlers and start polling
+function init() {
+	$('#text-input').keypress(function (e) {
+		if(e.which == 13) send(); 
+	});
+	
+	$('#new-channel').keypress(function(e) {
+		if(e.which == 13) {
+			join(this.value);
+			this.value = '';
+		}
+	});
+	
+	$('#channels').change(function () {
+		join(this.value);
+	});
+	
+	$(window).unload(function() {
+		$.ajax({'url': api, 'data': {'user': user, 'action': 'logout'}, 'async': false});
+	})
+	
+	login();
+}
+
+function logout() {
+	$.ajax({'url': api, 'data': {'user': user, 'action': 'logout'}, 'success': login});
+}
+
+function login() {
+	user = prompt('Enter your username');
+	if(!user) {
+		$('#conversation').append("No user - unable to continue\n");
+	}
+	$('a.brand').append(' (' + user + ')');
+	get_info();
+	poll();
+}
+
+// send a message to the current channel
+function send() {
+	input = $('#text-input');
+	$.get(api, {'user': user, 'action': 'send', 'message': input.val()}, function (data) {
+		console.log("Message sent");
+	});
+	input.val('');
+	return false;
+}
+
+// join a channel
+function join(channel) {
+	$.get(api, {'user': user, 'action': 'join', 'channel': channel}, get_info);
+}
+
+// get info about current subscription
+function get_info() {
+	$('#users').empty();
+	$('#channels').empty();
+	
+	$.get(api, {'user': user, 'action': 'info'},
+			function (data) {
+				console.log(data);
+				for(i in data['message']['channels']) {
+					s = 'value="' + i + '"';
+					if(i == data['message']['channel']) s += ' selected';
+					$('#channels').append('<option ' + s + '>' + [i] + '</option>');
+				}
+				for(i in data['message']['subscribers']) {
+					s = data['message']['subscribers'][i];
+					if(data['message']['subscribers'][i] == user) {
+						s = "<b>" + s + "</b>"; 
+					}
+					$('#users').append('<li>' + s + '</li>');
+				}
+				console.log($('#channel').html());
+				$('#channel').html('Channel ' + data['message']['channel']);
+				console.log(data);
+			}
+	)
+}
+
+// poll the server for data
+function poll(data) {
+	console.log(new Date());
+	div = $('#conversation');
+	try {
+		if(data && data['message']) {
+			line = data['message']['user'] + ": " + data['message']['message'];
+			div.append(line + "\n");
+		}
+	} catch(e) {
+		div.append(e + "\n");
+	}
+	div.prop({ 'scrollTop': div.prop("scrollHeight") });
+	
+	if(!user) {
+		div.append("No current user\n");
+		return;
+	}
+	$.ajax({'url': api, 'data': {'user': user}, 'success': poll, 'error': poll});
+}
+	</script>
+</html>

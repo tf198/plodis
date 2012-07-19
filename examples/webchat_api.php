@@ -1,19 +1,22 @@
 <?php 
+header('Content-type: application/json');
 $base = dirname(dirname(__FILE__));
 
-include "{$base}/Plodis.php";
+try {
+	include "{$base}/Plodis.php";
 
-$datafile = "{$base}/data/webchat.sq3";
-$plodis = new Plodis($datafile);
+	$datafile = "{$base}/data/webchat.sq3";
+	$plodis = new Plodis($datafile);
 
-header('Content-type: application/json');
+	$action = (isset($_GET['action'])) ? $_GET['action'] : 'listen';
+	$user = (isset($_GET['user'])) ? $_GET['user'] : null;
 
-$action = (isset($_GET['action'])) ? $_GET['action'] : 'listen';
-$user = (isset($_GET['user'])) ? $_GET['user'] : null;
-
-if(!$user) fail('No username given');
-$plodis->pubsub->setuid($user);
-
+	if(!$user) fail('No username given');
+	$plodis->pubsub->setuid($user);
+} catch(Exception $e) {
+	fail($e->getMessage());
+}
+	
 switch($action) {
 	case 'listen':
 		$data = $plodis->pubsub->bpoll(25);
@@ -47,8 +50,11 @@ switch($action) {
 		$new_channels = array_keys($plodis->pubsub->channels());
 		if($new_channels != $old_channels) {
 			foreach($plodis->hkeys('webchat') as $user) {
-				//$plodis->publish($channel, data("<i>Sending update to {$user}</i>"));
 				$plodis->pubsub->send($user, data($new_channels, 3));
+			}
+		} else {
+			if($current === null) {
+				$plodis->publish($channel, data($new_channels, 3));
 			}
 		}
 		

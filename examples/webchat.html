@@ -36,7 +36,7 @@
 				<div class="span4">
 					<div class="well">
 						<h3>Channels</h3>
-						<select multiple class="disabled" id="channels">
+						<select multiple id="channels">
 							<option>Loading channels...</option>
 						</select>
 						<label>New Channel</label>
@@ -95,13 +95,9 @@ function login() {
 	}
 	$('a.brand').append(' (' + user + ')');
 	
-	$.get(api, {'user': user, 'action': 'login'}, function(data) {
-		console.log(data);
-		set_channel(data['data']['channel']);
-		set_channels(data['data']['channels']);
-	})
-	
-	poll();
+	poll({'type': 0, 'data': 'init'});
+	join('Newbie');
+	$('#text-input').focus();
 }
 
 // send a message to the current channel
@@ -151,7 +147,7 @@ function set_channel(channel) {
 // poll the server for data
 function poll(data) {
 	try {
-		if(data && data['type']) {
+		if(data && data['type'] !== undefined) {
 			item = data['data'];
 			switch(data['type']) {
 			case 1: // user message
@@ -161,7 +157,7 @@ function poll(data) {
 				set_users(item);
 				break;
 			case 3: // updated channel list
-				//console.log(data);
+				console.log(data);
 				set_channels(item);
 				break;
 			case 0: // general message
@@ -170,12 +166,14 @@ function poll(data) {
 			case -1:
 				console.log(data);
 				output('Error: ' + item);
+				return;
 			default:
 				console.log("Unknown type", data);
+				output("Data error");
+				return;
 			}
-			
 		} else {
-			console.log("No data", data);	
+			console.log("No data", item);
 		}
 	} catch(e) {
 		console.log(e, data);

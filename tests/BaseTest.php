@@ -11,6 +11,8 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 
 	public $check_keys = array('check_1', 'check_2', 'check_3', 'check_4', 'check_5');
 	
+	public $skip_checks = false;
+	
 	function setUp() {
 		$this->db = new Plodis(new PDO('sqlite::memory:'));
 		
@@ -23,6 +25,7 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 	}
 	
 	function tearDown() {
+		if($this->skip_checks) return;
 		$this->assertSame(array('one', 'two'), $this->db->mget('check_1', 'check_2'));
 		$this->assertSame(array('two', 'one', 'three', 'four'), $this->db->lrange('check_3', 0, -1));
 		$this->assertSame(array('1', '2'), $this->db->hvals('check_4'));

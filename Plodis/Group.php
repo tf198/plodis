@@ -20,10 +20,10 @@ class Plodis_Group {
 		return $this->proxy->db->cachedStmt($sql);
 	}
 	
-	protected function fetchOne($which, $params=array()) {
+	protected function fetchOne($which, $params=array(), $column=null) {
 		$stmt = $this->getStmt($which);
 		$stmt->execute($params);
-		$result = $stmt->fetch(PDO::FETCH_NUM);
+		$result = ($column === null) ? $stmt->fetch(PDO::FETCH_NUM) : $stmt->fetch(PDO::FETCH_COLUMN, $column);
 		$stmt->closeCursor();
 		return $result;
 	}

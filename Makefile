@@ -1,6 +1,6 @@
 REDIS_VERSION=2_6_0
 
-REDIS_GROUPS=Connection Generic String List Hash Set Pubsub
+REDIS_GROUPS=Connection Server Generic String List Hash Set Pubsub
 
 GROUP_INTERFACES=$(addprefix interfaces/Redis_,$(addsuffix _$(REDIS_VERSION).php,$(REDIS_GROUPS)))
 

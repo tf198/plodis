@@ -235,6 +235,10 @@ class Plodis_DB {
 		return $this->conn;
 	}
 	
+	function getDBTable() {
+		return $this->db_table;
+	}
+	
 	public function close() {
 		$this->conn = null;
 	}

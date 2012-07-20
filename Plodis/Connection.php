@@ -26,7 +26,7 @@ class Plodis_Connection extends Plodis_Group implements Redis_Connection_2_6_0 {
      * @return null no documentation available
      */
     public function auth($password) {
-    	// not implemented - just pretend we did
+    	$this->proxy->log('Dummy call to AUTH', LOG_INFO);
     }
 
     /**

@@ -43,7 +43,7 @@ it will throw a ``PlodisNotImplementedError``.
 :Connection:
    Full 2.6.0 coverage.
 :Server:
-   Not implemented
+   Implemented the methods that make sense...
 
 Options
 =======

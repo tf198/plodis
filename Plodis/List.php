@@ -1,10 +1,6 @@
 <?php
 require_once PLODIS_BASE . "/interfaces/Redis_List_2_6_0.php";
 
-#define REDIS_1_0_0
-#define REDIS_1_2_0
-#define REDIS_2_0_0
-
 class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	
 	protected $sql = array(
@@ -16,21 +12,19 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		'lset'			=> 'UPDATE <DB> SET item=? WHERE id=?',
 		'l_key_val'		=> 'SELECT id, weight, type FROM <DB> WHERE key=? AND item=?',
 		'l_shift'		=> 'UPDATE <DB> SET weight = weight-1 WHERE key=? AND id<=? OR weight<?', // creates a space before the target item
-		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY weight, id LIMIT ?)',
-		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? ORDER BY weight DESC, id DESC LIMIT ?)',
+		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? AND type=? ORDER BY weight, id LIMIT ?)',
+		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? AND type=? ORDER BY weight DESC, id DESC LIMIT ?)',
 		'list_del' 		=> 'DELETE FROM <DB> WHERE id=?',
 		'ltrim_l'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY weight, id LIMIT ?)',
 		'ltrim_r'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY weight DESC, id DESC LIMIT ?)'
 	);
 	
-	#ifdef REDIS_1_0_0
 	function llen($key, $verified=false) {
 		$this->proxy->generic->gc();
 		// this is called by push ops so cache the verification if possible
 		if(!$verified) $this->proxy->generic->verify($key, 'list');
 		
-		$row = $this->fetchOne('llen', array($key));
-		return (int) $row[0];
+		return (int) $this->fetchOne('llen', array($key), 0);
 	}
 	
 	function lindex($key, $index) {
@@ -59,14 +53,21 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			$index = -$index - 1;
 		}
 		$row = $this->fetchOne($s, array($key, 1, $index));
-		if($row && $row[2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
-		return $row;
+		if($row) {
+			if($row[2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
+			return $row;
+		} else {
+			$this->proxy->generic->verify($key, 'list');
+			return null;
+		}
 	}
 	
 	function ltrim($key, $start, $end) {
 		#$this->proxy->log("Starting {$start}, {$end}", LOG_WARNING);
 		$this->proxy->generic->gc();
 		$this->proxy->db->lock();
+		$this->proxy->generic->verify($key, 'list', 1);
+		
 		if($start > 0) {
 			$c = $this->executeStmt('ltrim_l', array($key, $start));
 			#$this->proxy->log("Removed {$c} elements from start", LOG_WARNING);
@@ -124,8 +125,14 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		$stmt = $this->getStmt($s);
 		$stmt->execute(array($key, $limit, $offset));
 	
-		$data = $stmt->fetchAll(PDO::FETCH_COLUMN, 1);
+		$data = $stmt->fetchAll(PDO::FETCH_NUM);
 	
+		if($data) {
+			if($data[0][2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
+		} else {
+			$this->proxy->generic->verify($key, 'list');
+		}
+		
 		// reverse queries
 		if($flip) {
 			$data = array_reverse($data);
@@ -136,7 +143,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			$data = array_slice($data, 0, $stop+1);
 		}
 	
-		return $data;
+		return $this->pluck($data, 1);
 	}
 	
 	function lrem($key, $count, $value) {
@@ -148,7 +155,11 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		}
 		if($count == 0) $count = -1;
 	
-		return $this->executeStmt($s, array($key, $value, $count));
+		$c = $this->executeStmt($s, array($key, $value, Plodis::TYPE_LIST, $count));
+		if($c == 0) {
+			$this->proxy->generic->verify($key, 'list');
+		}
+		return $c;
 	}
 	
 	function rpush($key, $values) {
@@ -228,12 +239,11 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			if($result[2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
 			return $result[1];
 		} else {
+			//$this->proxy->generic->verify($key, 'list'); // this causes a SQLITE_SCHEME changed exception for some reason
 			return null;
 		}
 	}
-	#endif
 	
-	#ifdef REDIS_1_2_0
 	function rpoplpush($source, $destination) {
 		$this->proxy->db->lock();
 		$item = $this->rpop($source);
@@ -241,9 +251,7 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		$this->proxy->db->unlock();
 		return $item;
 	}
-	#endif
 	
-	#ifdef REDIS_2_0_0
 	function blpop($key, $timeout) {
 		return $this->_pop($key, 'l_forward', $timeout);
 	}
@@ -251,18 +259,19 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 	function brpop($key, $timeout) {
 		return $this->_pop($key, 'l_reverse', $timeout);
 	}
-	#endif
 	
-	#ifdef REDIS_2_2_0
 	function linsert($key, $pos, $pivot, $value) {
 		// make atomic
 		$this->proxy->db->lock();
 	
 		$items = $this->fetchAll('l_key_val', array($key, $pivot));
 		if(!$items) {
-			$this->proxy->db->unlock(true);
+			$this->proxy->db->unlock();
+			$this->proxy->generic->verify($key, 'list');
 			return -1;
 		}
+		
+		if($items[0][2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
 		
 		if(strtolower($pos) == 'before') {
 			$items[0][0]--;
@@ -308,5 +317,4 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		$this->proxy->db->unlock();
 		return $result;
 	}
-	#endif
 }

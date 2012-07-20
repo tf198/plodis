@@ -118,7 +118,12 @@ bench('HGET', LOOP_SIZE);
 for($i=0; $i<LOOP_SIZE; $i++) {
 	$db->sadd('set_1', rand(0, 10));
 }
-bench('SADD', LOOP_SIZE);
+bench('SADD (RAND 10)', LOOP_SIZE);
+
+for($i=0; $i<LOOP_SIZE; $i++) {
+	$db->sadd('set_2', rand(0, 100));
+}
+bench('SADD (RAND 100)', LOOP_SIZE);
 
 assert($db->generic->gc_count < 10);
 

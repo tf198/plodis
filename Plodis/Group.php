@@ -43,4 +43,9 @@ class Plodis_Group {
 		$stmt->execute($params);
 		return $stmt->rowCount();
 	}
+	
+	public function pluck(&$arr, $col) {
+		foreach($arr as &$row) $row = $row[$col];
+		return $arr;
+	}
 }

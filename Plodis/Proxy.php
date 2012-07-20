@@ -293,11 +293,11 @@ class Plodis_DB {
 	
 	public function debug($key) {
 		$stmt = $this->cachedStmt("SELECT * FROM <DB> WHERE key=? ORDER BY field, id");
-		$stmt->execute();
-		fputs(STDERR, "\n\n");
+		$stmt->execute(array($key));
+		fputs(STDERR, "\nDEBUG [{$key}]\n");
 		while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 			$time = ($row['expiry']) ? $row['expiry'] - time() : 'inf';
-			fprintf(STDERR, "%3d %3d %3s %-10s %s\n", $row['id'], $row['field'], $time, $row['key'], $row['item']);
+			fprintf(STDERR, "%5d %-6s %-6s %3s %4d %s\n", $row['id'], $row['key'], $row['field'], $time, $row['weight'], $row['item']);
 		}
 	}
 	

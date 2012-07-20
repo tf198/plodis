@@ -38,8 +38,8 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		return ($this->proxy->string->get($key) == null) ? 0 : 1;
 	}
 	
-	function keys($pattern=null) {
-		if($pattern) {
+	function keys($pattern) {
+		if($pattern != '*') {
 			$stmt = $this->getStmt('get_fuzzy_keys');
 			$pattern = str_replace('*', '%', $pattern);
 			$stmt->execute(array($pattern));

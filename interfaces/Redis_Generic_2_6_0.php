@@ -112,7 +112,7 @@ interface Redis_Generic_2_6_0 {
      * @return multitype:string list of keys matching `pattern`.
      *
      */
-    public function keys($pattern=null);
+    public function keys($pattern);
 
     /**
      * Atomically transfer a key from a Redis instance to another one.

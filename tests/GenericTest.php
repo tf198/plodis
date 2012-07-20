@@ -25,17 +25,17 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testKeys() {
-		$this->assertSame($this->check_keys, $this->db->keys());
+		$this->assertSame($this->check_keys, $this->db->keys('*'));
 		
 		$loc = new Plodis(':memory:');
 		
 		// no keys
-		$this->assertSame(array(), $loc->keys());
+		$this->assertSame(array(), $loc->keys('*'));
 	
 		$loc->mset(array('one' => 1, 'two' => 'two', 'three' => 'iii'));
 	
 		// normal match
-		$this->assertSame(array('one', 'two', 'three'), $loc->keys());
+		$this->assertSame(array('one', 'two', 'three'), $loc->keys('*'));
 	
 		// fuzzy matches
 		$this->assertSame(array('two'), $loc->keys('two')); // silly but valid

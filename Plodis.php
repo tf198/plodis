@@ -684,7 +684,7 @@ class Plodis extends Plodis_Proxy {
      * @return multitype:string list of keys matching `pattern`.
      *
      */
-    public function keys($pattern=null) {
+    public function keys($pattern) {
         return $this->generic->keys($pattern);
     }
 

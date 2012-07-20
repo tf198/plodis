@@ -17,3 +17,9 @@ Plodis.php: src/generate_proxy.php src/generate_common.php src/redis-doc $(GROUP
 	
 %.profile:
 	php -d xdebug.profiler_enable=1 -d xdebug.profiler_output_dir=profile $*
+	
+src/predis:
+	git clone git://github.com/nrk/predis.git $@ || true
+	
+predis_0.7.3.phar: src/predis
+	php -d phar.readonly=0 $</bin/create-phar.php

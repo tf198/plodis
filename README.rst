@@ -51,7 +51,8 @@ By default Plodis should behave exactly as a Redis instance with the same guaran
 are provided to turn off some of the strict checking and fine tune performance options.  Once you have fully tested your app you should be able to
 turn off many of these and see 2-3 times throughput on some operations, particularly LIST ops.
 
-Use ``$plodis->setOption($name, $value)`` and ``$plodis->getOption($name)`` to modify the options. 
+Use ``$plodis->setOption($name, $value)`` and ``$plodis->getOption($name)`` to modify the options 
+(or ``$plodis->config_get($name)`` and ``$plodis->config_set($name, $value)`` to use the Server module). 
 
 :return_counts (``true``):
    [ RPUSH, LPUSH, LINSERT, RPUSHX, LPUSHX ] return the size of the list after the operation which requires an additional query.  If this is set
@@ -94,7 +95,9 @@ As you can see the memory footprint for the package is around 700K - no need to 
 The benchmarks are all run on my AMD Phenom II x6 3.20Ghz using a *dirty* database - i.e. the data from previous runs is left in so it gives a good idea of real world usage
 and each loop set at 1000.  ``return_counts`` and ``validation_checks`` are both set to ``false``.
 
-Just rememeber that if performance becomes that important to you then you should probably shift to a Redis server! :-)
+If I run the same benchmark using Predis connecting to a Redis server running in a VM I get ~5K/s consistently for all operations and ~12K/s
+for pipelining suggesting that the transport overheads with Predis and the database inefficiencies of Plodis roughly balance out, not that I am suggesting you should
+use Plodis for high throughput production servers :-)  
 
 ===== ==== ====== ==== ======= =======================================
 Mem (KB)   Time (ms)     Ops   Description

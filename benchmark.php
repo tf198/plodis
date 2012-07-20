@@ -1,4 +1,9 @@
 <?php
+$backend = ($argc>1) ? strtoupper($argv[1]) : 'PLODIS';
+$server = ($argc>2) ? $argv[2] : null;
+
+fprintf(STDOUT, "Running benchmarks using {$backend}\n");
+
 $GLOBALS['bench_mem'] = 0;
 $GLOBALS['bench_ts_start'] = microtime(true);
 $GLOBALS['bench_ts'] = microtime(true);
@@ -31,17 +36,30 @@ function bench($message, $count=1) {
 
 bench('init (' . $key . ')');
 
-include "Plodis.php";
-bench('include');
-
-$pdo = new PDO('sqlite:' . BENCH_DATA);
-bench('PDO from existing data');
-
-$db = new Plodis($pdo);
-bench('construct');
-
-$db->setOption('return_counts', false);
-$db->setOption('validation_checks', false);
+switch($backend) {
+	case 'PREDIS':
+		require "predis_0.7.3.phar";
+		bench('include PREDIS');
+		
+		$db = new Predis\Client($server);
+		bench('construct PREDIS');
+		break;
+	case 'PLODIS':
+		require "Plodis.php";
+		bench('include PLODIS');
+		
+		$pdo = new PDO('sqlite:' . BENCH_DATA);
+		bench('PDO from existing data');
+		
+		$db = new Plodis($pdo);
+		bench('construct PLODIS');
+		
+		$db->setOption('return_counts', false);
+		$db->setOption('validation_checks', false);
+		break;
+	default:
+		throw new Exception("Unknown backend: " . BACKEND);
+}
 
 bench("Starting loop tests - " . LOOP_SIZE . " iterations");
 
@@ -55,12 +73,21 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('SET (update)', LOOP_SIZE);
 
-$db->db->lock();
-for($i=0; $i<LOOP_SIZE; $i++) {
-	$db->set("{$key}_{$i}", $i);
+if($backend == 'PLODIS') {
+	$db->db->lock();
+	for($i=0; $i<LOOP_SIZE; $i++) {
+		$db->set("{$key}_{$i}", $i);
+	}
+	$db->db->unlock();
+	bench('SET (update, locked)', LOOP_SIZE);
+} else {
+	$replies = $db->pipeline(function($pipe) use($key) {
+		for($i=0; $i<LOOP_SIZE; $i++) {
+			$pipe->set("{$key}_{$i}", $i);
+		}
+	});
+	bench('SET (pipelined)', LOOP_SIZE);
 }
-$db->db->unlock();
-bench('SET (update, locked)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
  	assert($db->get("{$key}_{$i}") == $i);
@@ -68,12 +95,22 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('GET', LOOP_SIZE);
 
-$db->db->lock();
-for($i=0; $i<LOOP_SIZE; $i++) {
-	assert($db->get("{$key}_{$i}") == $i);
+if($backend == 'PLODIS') {
+	$db->db->lock();
+	for($i=0; $i<LOOP_SIZE; $i++) {
+		assert($db->get("{$key}_{$i}") == $i);
+	}
+	$db->db->unlock();
+	bench('GET (locked)', LOOP_SIZE);
+} else {
+	$replies = $db->pipeline(function($pipe) use($key) {
+		for($i=0; $i<LOOP_SIZE; $i++) {
+			$pipe->get("{$key}_{$i}");
+		}
+	});
+	foreach($replies as $i=>$val) assert($i == $val);
+	bench('GET (pipelined)', LOOP_SIZE);
 }
-$db->db->unlock();
-bench('GET (locked)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
 	$db->lpush("list_{$key}", $i);
@@ -125,7 +162,9 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('SADD (RAND 100)', LOOP_SIZE);
 
-assert($db->generic->gc_count < 10);
+if($backend == 'PLODIS') {
+	assert($db->generic->gc_count < 10);
+}
 
 // free everything we can
 unset($pdo, $db);

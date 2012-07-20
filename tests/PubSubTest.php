@@ -4,6 +4,7 @@ require_once "BaseTest.php";
 class PubSubTest extends BaseTest {
 	
 	function testUsage() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$pdo = new PDO('sqlite::memory:');
 		
 		$pub = new Plodis($pdo);
@@ -49,6 +50,7 @@ class PubSubTest extends BaseTest {
 	}
 	
 	function testUnsubscribe() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$pdo = new PDO('sqlite::memory:');
 		
 		$pub = new Plodis($pdo);

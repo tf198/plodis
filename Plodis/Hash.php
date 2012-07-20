@@ -128,6 +128,7 @@ class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
      * @return null no documentation available
      */
     public function hincrby($key, $field, $increment) {
+    	if((int)$increment != $increment) throw new PlodisError("ERR value is not an integer or out of range");
     	$result = $this->hincrbyfloat($key, $field, (int)$increment);
     	if($result !== null) $result = (int) $result;
     	return $result;

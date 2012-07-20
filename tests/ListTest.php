@@ -11,10 +11,14 @@ class ListTest extends BaseTest {
 		$this->assertSame(4, $this->db->rpush('test1', 'three', 'four'));
 		
 		// opt behavior
-		$this->db->setOption('return_counts', false);
-		$this->assertSame(-1, $this->db->rpush('test1', 'five'));
-		$this->assertSame(-1, $this->db->rpush('test1', 'six', 'seven'));
-		$this->db->setOption('return_counts', true);
+		if(BACKEND == 'PLODIS') {
+			$this->db->setOption('return_counts', false);
+			$this->assertSame(-1, $this->db->rpush('test1', 'five'));
+			$this->assertSame(-1, $this->db->rpush('test1', 'six', 'seven'));
+			$this->db->setOption('return_counts', true);
+		} else {
+			$this->db->rpush('test1', 'five', 'six', 'seven');
+		}
 		
 		// check result
 		$this->assertSame(array('one', 'two', 'three', 'four', 'five', 'six', 'seven'), $this->db->lrange('test1', 0, -1));
@@ -32,10 +36,14 @@ class ListTest extends BaseTest {
 		$this->assertSame(4, $this->db->lpush('test1', 'three', 'four'));
 		
 		// opt behavior
-		$this->db->setOption('return_counts', false);
-		$this->assertSame(-1, $this->db->lpush('test1', 'five'));
-		$this->assertSame(-1, $this->db->lpush('test1', 'six', 'seven'));
-		$this->db->setOption('return_counts', true);
+		if(BACKEND == 'PLODIS') {
+			$this->db->setOption('return_counts', false);
+			$this->assertSame(-1, $this->db->lpush('test1', 'five'));
+			$this->assertSame(-1, $this->db->lpush('test1', 'six', 'seven'));
+			$this->db->setOption('return_counts', true);
+		} else {
+			$this->db->lpush('test1', 'five', 'six', 'seven');
+		}
 		
 		// check result
 		$this->assertSame(array('seven', 'six', 'five', 'four', 'three', 'two', 'one'), $this->db->lrange('test1', 0, -1));
@@ -239,6 +247,7 @@ class ListTest extends BaseTest {
 	}
 	
 	function testLTrim() {
+		if(BACKEND != 'PLODIS') $this->markTestIncomplete(); // Predis returns 1
 		$this->db->rpush('test1', 'a', 'b', 'c', 'd', 'e');
 		$this->assertSame(null, $this->db->ltrim('test1', 0, 3));
 		$this->assertSame(array('a', 'b', 'c'), $this->db->lrange('test1', 0, -1));

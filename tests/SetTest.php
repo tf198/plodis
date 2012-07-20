@@ -140,9 +140,9 @@ class SetTest extends BaseTest {
 		$this->db->sadd('test2', 'c', 'f', 'z');
 		$this->db->sadd('test3', 'a', 'c', 'e');
 		
-		$this->assertEquals(array('a', 'b', 'c', 'd'), $this->db->sunion('test1'));
-		$this->assertEquals(array('a', 'b', 'd', 'c', 'f', 'z'), $this->db->sunion('test1', 'test2'));
-		$this->assertEquals(array('b', 'd', 'f', 'z', 'a', 'c', 'e'), $this->db->sunion('test1', 'test2', 'test3'));
+		$this->assertSame(array('a', 'b', 'c', 'd'), $this->db->sunion('test1'));
+		$this->assertSame(array('a', 'b', 'd', 'c', 'f', 'z'), $this->db->sunion('test1', 'test2'));
+		$this->assertSame(array('b', 'd', 'f', 'z', 'a', 'c', 'e'), $this->db->sunion('test1', 'test2', 'test3'));
 		
 		$this->assertThrows('PlodisIncorrectKeyType:', $this->db, 'sunion', 'check_1', 'test2');
 	}

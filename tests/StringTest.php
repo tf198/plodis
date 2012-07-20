@@ -54,6 +54,8 @@ class StringTest extends BaseTest {
 		
 		$this->assertSame(2, $this->db->incr('test1'));
 		
+		if(BACKEND != 'PLODIS') return;
+		
 		$this->db->setOption('return_incr_values', false);
 		$this->assertSame(null, $this->db->incr('test1'));
 		$this->db->setOption('return_incr_values', true);
@@ -159,6 +161,8 @@ class StringTest extends BaseTest {
 		$this->db->setbit('test1', 5, 1);
 		$this->db->setbit('test1', 6, 1);
 		$this->db->setbit('test1', 14, 1);
+		
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$this->assertSame(97, $this->db->string->getbyte('test1', 0));
 		$this->assertSame(64, $this->db->string->getbyte('test1', 1));
 		
@@ -166,8 +170,8 @@ class StringTest extends BaseTest {
 	}
 	
 	function testGetBit() {
-		$this->db->string->setbyte('test1', 0, 97);
-		$this->db->string->setbyte('test1', 1, 63);
+		$this->setByte('test1', 0, 97);
+		$this->setByte('test1', 1, 63);
 		$this->assertSame(1, $this->db->getbit('test1', 0));
 		$this->assertSame(0, $this->db->getbit('test1', 1));
 		$this->assertSame(0, $this->db->getbit('test1', 2));
@@ -191,12 +195,14 @@ class StringTest extends BaseTest {
 	}
 	
 	function testInverse() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$this->db->string->setbyte('test1', 1, 12);
 		$this->assertSame(0, $this->db->string->getbyte('test1', 0));
 		$this->assertSame(12, $this->db->string->getbyte('test1', 1));
 	}
 	
 	function testGetByte() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$this->db->set('test1', 'abcde');
 		$this->assertSame(98, $this->db->string->getbyte('test1', 1));
 		$this->assertSame(101, $this->db->string->getbyte('test1', 4));
@@ -205,6 +211,7 @@ class StringTest extends BaseTest {
 	}
 	
 	function testSetByte() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$this->db->set('test1', 'abcde');
 		$this->db->string->setbyte('test1', 2, 90);
 		$this->assertSame('abZde', $this->db->get('test1'));
@@ -214,16 +221,31 @@ class StringTest extends BaseTest {
 	}
 	
 	function testBitCount() {
-		$this->db->string->setbyte('test1', 0, 97);
+		$this->setByte('test1', 0, 97);
 		$this->assertSame(3, $this->db->bitcount('test1'));
-		$this->db->string->setbyte('test1', 1, 67);
+		$this->setByte('test1', 1, 67);
 		$this->assertSame(6, $this->db->bitcount('test1'));
 	}
 	
+	function setByte($key, $byte, $value) {
+		if(BACKEND == 'PLODIS') {
+			$this->db->string->setbyte($key, $byte, $value);
+		} else {
+			$i=0;
+			$offset = $byte * 8;
+			while($value) {
+				if($value & 1) $this->db->setbit($key, $offset + $i, 1);
+				$value >>= 1;
+				$i++;
+			}
+		}
+	}
+	
 	function testBitOp() {
-		$this->db->string->setbyte('test1', 0, 97);
-		$this->db->string->setbyte('test2', 0, 63);
-		$this->db->string->setbyte('test3', 0, 73);
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
+		$this->setByte('test1', 0, 97);
+		$this->setByte('test2', 0, 63);
+		$this->setByte('test3', 0, 73);
 		
 		$this->assertSame(1, $this->db->bitop('not', 'res1', 'test1'));
 		$this->assertSame(ord(~ 'a'), $this->db->string->getbyte('res1', 0));
@@ -239,6 +261,11 @@ class StringTest extends BaseTest {
 		
 		$this->assertSame(1, $this->db->bitop('xor', 'res5', 'test1', 'test2'));
 		$this->assertSame(ord('a' ^ '?'), $this->db->string->getbyte('res5', 0));
+	}
+	
+	function testSetEx() {
+		$this->db->setex('test1', 23, 'one');
+		$this->assertEquals(23, $this->db->ttl('test1'));
 	}
 	
 }

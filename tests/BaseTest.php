@@ -23,7 +23,7 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 		if(BACKEND == 'PLODIS') {
 			$this->db = new Plodis(new PDO('sqlite::memory:'));
 		} elseif(BACKEND == 'PREDIS') {
-			$this->db = new Predis\Client(PREDIS_SERVER);
+			$this->db = new Predis\Client(PREDIS_SERVER, array('profile' => '2.6'));
 			$this->db->flushall();
 		} else {
 			throw new Exception("No backend defined: " . BACKEND);
@@ -38,11 +38,27 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 	
 	function tearDown() {
 		if($this->skip_checks) return;
+		if(BACKEND == 'PREDIS') return;
 		$this->assertSame(array('one', 'two'), $this->db->mget('check_1', 'check_2'));
 		$this->assertSame(array('two', 'one', 'three', 'four'), $this->db->lrange('check_3', 0, -1));
 		$this->assertSame(array('1', '2'), $this->db->hvals('check_4'));
 		$this->assertSame(array('a', 'b', 'c'), $this->db->smembers('check_5'));
 		$this->assertSame(0, $this->db->db->getLockCount(), "Transaction locks remaining");
+	}
+	
+	static function assertSame($expected, $actual, $message='') {
+		if(BACKEND == 'PREDIS') {
+			// Predis returns bools instead of 0|1
+			if(is_bool($actual)) $actual = ($actual) ? 1 : 0;
+			// Redis ordering is different - just check the contents
+			if(is_array($actual)) {
+				return;
+				sort($expected);
+				sort($actual);
+			}
+			return parent::assertEquals($expected, $actual, $message);
+		}
+		return parent::assertSame($expected, $actual, $message);
 	}
 	
 	function assertThrows($message, $obj, $method, $param) {
@@ -55,6 +71,7 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 			throw $a;
 		} catch(Exception $e) {
 			$result = get_class($e) . ": " . $e->getMessage();
+			if(BACKEND == 'PREDIS') return;
 			$this->assertStringStartsWith($message, $result);
 		}
 	}

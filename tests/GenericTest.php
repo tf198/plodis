@@ -57,14 +57,13 @@ class GenericTest extends BaseTest {
 		$this->db->set('test1', 1);
 		
 		$this->assertSame(1, $this->db->expireat('test1', time() + 12));
-		$this->assertSame(12, $this->db->ttl('test1'));
+		$this->assertEquals(12, $this->db->ttl('test1'), '', 1);
 		
 		$this->assertSame(0, $this->db->expireat('test2', time() + 12));
 	}
 	
 	function testPersist() {
-		if(strcmp(Plodis::REDIS_VERSION, '2.6.0') < 0)  $this->markTestSkipped();
-		$this->db->setex('test1', 1, 13);
+		$this->db->setex('test1', 13, 'one');
 		
 		$this->assertSame(13, $this->db->ttl('test1'));
 		$this->assertSame(1, $this->db->persist('test1'));
@@ -101,7 +100,7 @@ class GenericTest extends BaseTest {
 		
 		// transient
 		$this->db->pexpire('test1', 1034);
-		$this->assertSame(1034, $this->db->pttl('test1'));
+		$this->assertEquals(1034, $this->db->pttl('test1'), '', 1.0);
 		
 		// expired
 		$this->db->expireat('test1', time()-10);
@@ -125,7 +124,7 @@ class GenericTest extends BaseTest {
 		
 		$this->db->expireat('test1', time()-1);
 		
-		$this->db = new Plodis($this->db->db->getConnection());
+		if(BACKEND == 'PLODIS') $this->db = new Plodis($this->db->db->getConnection());
 		
 		$this->assertSame(null, $this->db->get('test1'));
 	}
@@ -207,6 +206,7 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testSort() {
+		if(BACKEND != 'PLODIS') $this->markTestIncomplete();
 		$this->db->rpush('test1', 1, 4, 3, 6, 7, 4, 3, 4);
 		$this->db->mset(array('weight_1' => 10, 'weight_7' => 2));
 						

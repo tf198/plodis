@@ -17,10 +17,10 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	);
 	
 	function set($key, $value) {
-		return $this->setex($key, $value, null);
+		return $this->setex($key, null, $value);
 	}
 	
-	function setex($key, $value, $seconds) {
+	function setex($key, $seconds, $value) {
 		if(is_object($value)) throw new RuntimeException("Cannot convert object to string");
 		if(is_array($value)) throw new RuntimeException("Cannot convert array to string");
 	
@@ -291,7 +291,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	}
 	
 	function psetex($key, $milliseconds, $value) {
-		return $this->setex($key, $value, $milliseconds / 1000);
+		return $this->setex($key, $milliseconds / 1000, $value);
 	}
 	
 	function setnx($key, $value) {

@@ -4,10 +4,11 @@ require_once "BaseTest.php";
 class ServerTest extends BaseTest {
 	function testTime() {
 		$time = $this->db->time();
-		$this->assertEquals(time(), $time[0]);
+		$this->assertEquals(time(), $time[0], '', 1.0);
 	}
 	
 	function testInfo() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$expected = array(
 			'redis_version' => '2.6.0',
 			'db0' => 'keys=5,expires=0',
@@ -39,6 +40,7 @@ class ServerTest extends BaseTest {
 	}
 	
 	function testConfigGet() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$this->assertSame('0.1', $this->db->config_get('poll_frequency'));
 		$this->assertSame(null, $this->db->config_get('non-existent'));
 		
@@ -46,6 +48,7 @@ class ServerTest extends BaseTest {
 	}
 	
 	function testConfigSet() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		$this->db->config_set('poll_frequency', 0.2);
 		$this->db->config_set('non-existent', 'test');
 		
@@ -54,6 +57,7 @@ class ServerTest extends BaseTest {
 	}
 	
 	function testNoOps() {
+		if(BACKEND != 'PLODIS') $this->markTestSkipped();
 		// these all do nothing but should not throw exceptions
 		$this->db->bgrewriteaof();
 		$this->db->bgsave();

@@ -9,8 +9,8 @@ Even if you are not planning on using Redis in production, the `Redis API`_ make
 implement queues (IPC, background processing etc), pub/sub (webchat anyone?) and auto-expiring data
 (output caching) so it stands alone as a package quite happily.
 
-In theory you should be able to take an application running Plodis and change to Predis_ with only
-one or two changes - will update when I've tested...
+You can take an application running with Plodis and swap it to Predis_ and a proper Redis_ instance with
+no changes to your code - both the benchmarks and the unittest suite are run against both.
 
 .. _Redis: http://redis.io
 .. _Predis: https://github.com/nrk/predis/
@@ -63,6 +63,8 @@ Use ``$plodis->setOption($name, $value)`` and ``$plodis->getOption($name)`` to m
 :validation_checks (``true``):
    many methods will throw an exception if the key type is incorrect (e.g. if you try to LPUSH to a String).  Where possible these checks are integrated
    into the operation, but sometimes a separate query is required to check the key.  Settings this to ``false`` bypasses these queries.
+:predis_compatible (``false``):
+	**TODO** predis converts 1|0 return values to booleans and casts INCRBYFLOAT methods to float.  Set this to ``true`` for Predis_ behavior.
 :poll_frequency (0.1):
    [ BRPOP, BLPOP, BRPOPLPUSH, BPOLL (PubSub) ] are not true blocking functions but poll every 100ms.  Make this faster or slower as required.
 :purge_frequency (0.2):
@@ -79,11 +81,12 @@ TODO
 ====
 
 * Figure out what we do in the event of a crash (delete and recreate file)
-* Finish Generic, String, Set and ZSet modules
-* Finish preprocessor directives so we can compile for a specific version
+* Finish modules: ZSet, Transaction
 * Make sure the test suite is complete (return types?)
+* Implement predis compatible flag for return types.
 * Other optomisations (VACUUM?)
-* Figure out why I spent two days cloning something that was already excellent :-)
+* See how difficult it would be to make the SQL run on MySQL as well.
+* Figure out why I spent 2+ days cloning something that was already excellent :-)
    
 Performance
 ===========

@@ -92,9 +92,11 @@ class HashTest extends BaseTest {
 		
 		$this->assertSame(5, $this->db->hincrby('test1', 'one', 4));
 		$this->assertSame(8, $this->db->hincrby('test1', 'two', 6));
-		$this->assertSame(10, $this->db->hincrby('test1', 'two', 2.3));
+		$this->assertSame(10, $this->db->hincrby('test1', 'two', 2));
 		
-		$this->assertSame(3, $this->db->hincrby('test1', 'four', 3.6));
+		$this->assertSame(3, $this->db->hincrby('test1', 'four', 3));
+		
+		$this->assertThrows('PlodisError: ERR value is not an integer or out of range', $this->db, 'hincrby', 'test1', 'four', 2.3);
 	}
 	
 	function testHIncrByFloat() {

@@ -1,5 +1,11 @@
 <?php
-require_once "Plodis.php";
+//if(!defined('BACKEND')) define('BACKEND', 'PLODIS');
+
+if(BACKEND == 'PLODIS') {
+	require_once "Plodis.php";
+} elseif(BACKEND == 'PREDIS') {
+	require_once "predis_0.7.3.phar";
+}
 
 abstract class BaseTest extends PHPUnit_Framework_TestCase {
 
@@ -14,8 +20,14 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 	public $skip_checks = false;
 	
 	function setUp() {
-		$this->db = new Plodis(new PDO('sqlite::memory:'));
-		
+		if(BACKEND == 'PLODIS') {
+			$this->db = new Plodis(new PDO('sqlite::memory:'));
+		} elseif(BACKEND == 'PREDIS') {
+			$this->db = new Predis\Client(PREDIS_SERVER);
+			$this->db->flushall();
+		} else {
+			throw new Exception("No backend defined: " . BACKEND);
+		}
 		$this->db->mset(array('check_1' => 'one', 'check_2' => 'two'));
 		$this->db->lpush('check_3', 'one', 'two');
 		$this->db->rpush('check_3', 'three', 'four');

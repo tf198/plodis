@@ -9,4 +9,8 @@
 			<directory>tests</directory>
 		</testsuite>
 	</testsuites>
+	<php>
+		<const name="BACKEND" value="PLODIS"/>
+		<const name="PREDIS_SERVER" value="tcp://127.0.0.1"/>
+	</php>
 </phpunit>

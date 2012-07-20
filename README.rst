@@ -32,7 +32,7 @@ it will throw a ``PlodisNotImplementedError``.
 :Sets:
    Full 2.6.0 coverage.
 :Sorted Sets:
-   Not implemented.
+   Still to do...
 :Pub/Sub:
    Full 2.6.0 coverage except PSUBSCRIBE and PUNSUBSCRIBE
 :Transaction:
@@ -96,8 +96,9 @@ The benchmarks are all run on my AMD Phenom II x6 3.20Ghz using a *dirty* databa
 and each loop set at 1000.  ``return_counts`` and ``validation_checks`` are both set to ``false``.
 
 If I run the same benchmark using Predis connecting to a Redis server running in a VM I get ~5K/s consistently for all operations and ~12K/s
-for pipelining suggesting that the transport overheads with Predis and the database inefficiencies of Plodis roughly balance out, not that I am suggesting you should
-use Plodis for high throughput production servers :-)  
+for pipelining.  Running the benchmarks on the same VM against localhost gets ~15K/s.  Suggests that the transport overheads with Predis 
+and the database inefficiencies of Plodis roughly balance out, not that I am suggesting you should use Plodis for high throughput 
+production servers :-)  
 
 ===== ==== ====== ==== ======= =======================================
 Mem (KB)   Time (ms)     Ops   Description

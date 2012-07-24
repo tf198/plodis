@@ -1,5 +1,5 @@
 <?php
-require_once PLODIS_BASE . "/interfaces/Redis_Set_2_6_0.php";
+require_once "IRedis_Set_2_6_0.php";
 
 /**
  * Redis set methods for version 2.6.0
@@ -11,15 +11,15 @@ require_once PLODIS_BASE . "/interfaces/Redis_Set_2_6_0.php";
  * @author Tris Forster
  * @version 2.6.0
  */
-class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
+class Plodis_Set extends Plodis_Group implements IRedis_Set_2_6_0 {
 
 	protected $sql = array(
-		'sadd'		=> 'INSERT OR ABORT INTO <DB> (key, type, field) VALUES (?, ?, ?)',
-		'scard' 	=> 'SELECT COUNT(*) FROM <DB> WHERE key=?',
-		'smembers' 	=> 'SELECT field, type FROM <DB> WHERE key=? ORDER BY id',
-		'srand'		=> 'SELECT id, field, type FROM <DB> WHERE key=? ORDER BY RANDOM() LIMIT 1',
-		'srem'		=> 'DELETE FROM <DB> WHERE key=? AND field=?',
-		'sismember'	=> 'SELECT 1 FROM <DB> WHERE key=? AND field=?',
+		'sadd'		=> 'INSERT INTO <DB> (pkey, type, field) VALUES (?, ?, ?)',
+		'scard' 	=> 'SELECT COUNT(*) FROM <DB> WHERE pkey=?',
+		'smembers' 	=> 'SELECT field, type FROM <DB> WHERE pkey=? ORDER BY id',
+		'srand'		=> 'SELECT id, field, type FROM <DB> WHERE pkey=? ORDER BY RANDOM() LIMIT 1',
+		'srem'		=> 'DELETE FROM <DB> WHERE pkey=? AND field=?',
+		'sismember'	=> 'SELECT 1 FROM <DB> WHERE pkey=? AND field=?',
 	);
 	
     /**
@@ -93,7 +93,7 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     
     private function scustomstore($dest, $sql, $keys) {
     	$this->proxy->generic->gc();
-    	$sql = "INSERT INTO <DB> (key, field, type) SELECT DISTINCT ?, field, type " . $sql;
+    	$sql = "INSERT INTO <DB> (pkey, field, type) SELECT DISTINCT ?, field, type " . $sql;
     	
     	$stmt = $this->proxy->db->cachedStmt($sql);
     	array_unshift($keys, $dest);
@@ -136,9 +136,9 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     private function _sdiff_sql($keys) {
     	// have to construct this depending on number of args
     	$c = count($keys);
-    	$sql = "FROM <DB> WHERE key=?";
+    	$sql = "FROM <DB> WHERE pkey=?";
     	for($i=1; $i<$c; $i++) {
-    		$sql .= " AND field NOT IN (SELECT field FROM <DB> WHERE key=?)";
+    		$sql .= " AND field NOT IN (SELECT field FROM <DB> WHERE pkey=?)";
     	}
     	$sql .= " ORDER BY id";
     	return $sql;
@@ -181,11 +181,11 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     	$c = count($keys);
     	$sql = "";
     	for($i=1; $i<$c; $i++) {
-    		$inner = "SELECT field FROM <DB> WHERE key=?";
+    		$inner = "SELECT field FROM <DB> WHERE pkey=?";
     		if($sql) $inner .= " AND field IN ({$sql})";
     		$sql = $inner;
     	}
-    	return "FROM <DB> WHERE key=? AND field IN ({$sql}) ORDER BY id";
+    	return "FROM <DB> WHERE pkey=? AND field IN ({$sql}) ORDER BY id";
     }
     
     /**
@@ -373,9 +373,9 @@ class Plodis_Set extends Plodis_Group implements Redis_Set_2_6_0 {
     }
     
     private function _sunion_sql($keys) {
-    	$sql = "FROM <DB> WHERE key=?";
+    	$sql = "FROM <DB> WHERE pkey=?";
     	for($i=1, $c=count($keys); $i<$c; $i++) {
-    		$sql .= " OR key=?";
+    		$sql .= " OR pkey=?";
     	}
     	return $sql . " ORDER BY id";
     }

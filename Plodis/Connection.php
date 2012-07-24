@@ -1,6 +1,6 @@
 <?php
 
-require_once PLODIS_BASE . '/interfaces/Redis_Connection_2_6_0.php';
+require_once 'IRedis_Connection_2_6_0.php';
 
 /**
  * Redis connection methods for version 2.6.0
@@ -12,7 +12,7 @@ require_once PLODIS_BASE . '/interfaces/Redis_Connection_2_6_0.php';
  * @author Tris Forster
  * @version 2.6.0
  */
-class Plodis_Connection extends Plodis_Group implements Redis_Connection_2_6_0 {
+class Plodis_Connection extends Plodis_Group implements IRedis_Connection_2_6_0 {
 	
     /**
      * Authenticate to the server

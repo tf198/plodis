@@ -169,11 +169,11 @@ class Plodis_DB {
 	 * @var multitype:string
 	 */
 	private static $create_sql = array(
-		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, key TEXT, field TEXT, weight NUMERIC, item TEXT, expiry NUMERIC, UNIQUE(key, field))',
-		'CREATE INDEX IF NOT EXISTS <DB>_key ON <DB> (key)',
-		'CREATE INDEX IF NOT EXISTS <DB>_field ON <DB> (key, field)',
-		'CREATE INDEX IF NOT EXISTS <DB>_weight ON <DB> (key, weight)',
-		'CREATE INDEX IF NOT EXISTS <DB>_expiry ON <DB> (expiry)',
+		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, pkey TEXT, field TEXT, weight NUMERIC, item TEXT, expiry NUMERIC, UNIQUE(pkey, field))',
+		#'CREATE INDEX IF NOT EXISTS <DB>_key ON <DB> (key)',
+		#'CREATE INDEX IF NOT EXISTS <DB>_field ON <DB> (key, field)',
+		'CREATE INDEX IF NOT EXISTS <DB>_weight ON <DB> (pkey, weight)',
+		#'CREATE INDEX IF NOT EXISTS <DB>_expiry ON <DB> (expiry)',
 	);
 	
 	private $stmt_cache = array();
@@ -292,12 +292,12 @@ class Plodis_DB {
 	}
 	
 	public function debug($key) {
-		$stmt = $this->cachedStmt("SELECT * FROM <DB> WHERE key=? ORDER BY field, id");
+		$stmt = $this->cachedStmt("SELECT * FROM <DB> WHERE pkey=? ORDER BY field, id");
 		$stmt->execute(array($key));
 		fputs(STDERR, "\nDEBUG [{$key}]\n");
 		while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 			$time = ($row['expiry']) ? $row['expiry'] - time() : 'inf';
-			fprintf(STDERR, "%5d %-6s %-6s %3s %4d %s\n", $row['id'], $row['key'], $row['field'], $time, $row['weight'], $row['item']);
+			fprintf(STDERR, "%5d %-6s %-6s %3s %4d %s\n", $row['id'], $row['pkey'], $row['field'], $time, $row['weight'], $row['item']);
 		}
 	}
 	

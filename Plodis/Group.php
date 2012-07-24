@@ -13,10 +13,8 @@ class Plodis_Group {
 		$this->proxy = $proxy;
 	}
 	
-	protected function getStmt($which) {
-		if(!isset($this->sql[$which])) throw new RuntimeException("No SQL for '{$which}'");
-		$sql = $this->sql[$which];
-		
+	protected function getStmt($sql) {
+		if(isset($this->sql[$sql])) $sql = $this->sql[$sql];
 		return $this->proxy->db->cachedStmt($sql);
 	}
 	

@@ -9,7 +9,7 @@ $group = strtolower($argv[2]);
 $data = json_decode(file_get_contents(REDIS_DOC . 'commands.json'), true);
 
 $version = str_replace('_', '.', $safe_version);
-$name = "Redis_" . ucfirst($group) . "_{$safe_version}";
+$name = "IRedis_" . ucfirst($group) . "_{$safe_version}";
 
 echo <<< EOF
 <?php

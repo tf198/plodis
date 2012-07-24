@@ -1,23 +1,31 @@
 <?php
-require_once PLODIS_BASE . "/interfaces/Redis_List_2_6_0.php";
+require_once "IRedis_List_2_6_0.php";
 
-class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
+class Plodis_List extends Plodis_Group implements IRedis_List_2_6_0 {
 	
 	protected $sql = array(
-		'lpush_index'	=> 'SELECT MIN(weight) FROM <DB> WHERE key=?',
-		'llen' 			=> 'SELECT COUNT(*) FROM <DB> WHERE key=?',
-		'l_forward'		=> 'SELECT id, item, type FROM <DB> WHERE key=? ORDER BY weight, id LIMIT ? OFFSET ?',
-		'l_reverse'		=> 'SELECT id, item, type FROM <DB> WHERE key=? ORDER BY weight DESC, id DESC LIMIT ? OFFSET ?',
-		'l_insert' 		=> 'INSERT INTO <DB> (key, type, item, weight) VALUES (?, ?, ?, ?)',
+		'lpush_index'	=> 'SELECT MIN(weight) FROM <DB> WHERE pkey=?',
+		'llen' 			=> 'SELECT COUNT(*) FROM <DB> WHERE pkey=?',
+		'l_forward'		=> 'SELECT id, item, type FROM <DB> WHERE pkey=? ORDER BY weight, id',
+		'l_reverse'		=> 'SELECT id, item, type FROM <DB> WHERE pkey=? ORDER BY weight DESC, id DESC',
+		'l_insert' 		=> 'INSERT INTO <DB> (pkey, type, item, weight) VALUES (?, ?, ?, ?)',
 		'lset'			=> 'UPDATE <DB> SET item=? WHERE id=?',
-		'l_key_val'		=> 'SELECT id, weight, type FROM <DB> WHERE key=? AND item=?',
-		'l_shift'		=> 'UPDATE <DB> SET weight = weight-1 WHERE key=? AND id<=? OR weight<?', // creates a space before the target item
-		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? AND type=? ORDER BY weight, id LIMIT ?)',
-		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? AND item=? AND type=? ORDER BY weight DESC, id DESC LIMIT ?)',
+		'l_key_val'		=> 'SELECT id, weight, type FROM <DB> WHERE pkey=? AND item=?',
+		'l_shift'		=> 'UPDATE <DB> SET weight = weight-1 WHERE pkey=? AND id<=? OR weight<?', // creates a space before the target item
+		'lrem_forward'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE pkey=? AND item=? AND type=? ORDER BY weight, id LIMIT <C>)',
+		'lrem_reverse'	=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE pkey=? AND item=? AND type=? ORDER BY weight DESC, id DESC LIMIT <C>)',
 		'list_del' 		=> 'DELETE FROM <DB> WHERE id=?',
-		'ltrim_l'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY weight, id LIMIT ?)',
-		'ltrim_r'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE key=? ORDER BY weight DESC, id DESC LIMIT ?)'
+		'ltrim_l'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE pkey=? ORDER BY weight, id LIMIT <C>)',
+		'ltrim_r'		=> 'DELETE FROM <DB> WHERE id IN (SELECT id FROM <DB> WHERE pkey=? ORDER BY weight DESC, id DESC LIMIT <C>)'
 	);
+	
+	function limit($sql, $limit=null, $offset=0) {
+		if(isset($this->sql[$sql])) $sql = $this->sql[$sql];
+		if($offset && !$limit) $limit = 4294967295; // 32bit MySQL hack
+		if($limit) $sql .= " LIMIT {$limit}";
+		if($offset) $sql .= " OFFSET {$offset}";
+		return $sql;
+	}
 	
 	function llen($key, $verified=false) {
 		$this->proxy->generic->gc();
@@ -52,7 +60,8 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 			$s = 'l_reverse';
 			$index = -$index - 1;
 		}
-		$row = $this->fetchOne($s, array($key, 1, $index));
+		$sql = $this->limit($s, 1, $index);
+		$row = $this->fetchOne($sql, array($key));
 		if($row) {
 			if($row[2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
 			return $row;
@@ -69,13 +78,15 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		$this->proxy->generic->verify($key, 'list', 1);
 		
 		if($start > 0) {
-			$c = $this->executeStmt('ltrim_l', array($key, $start));
+			$sql = str_replace('<C>', $start, $this->sql['ltrim_l']);
+			$c = $this->executeStmt($sql, array($key));
 			#$this->proxy->log("Removed {$c} elements from start", LOG_WARNING);
 			if($end > 0) $end -= $start;
 			$start = 0;
 		} // $start is 0 or negative
 		if($end < -1) {
-			$c = $this->executeStmt('ltrim_r', array($key, -$end-1));
+			$sql = str_replace('<C>', -$end-1, $this->sql['ltrim_r']);
+			$c = $this->executeStmt($sql, array($key));
 			#$this->proxy->log("Removed {$c} elements from end", LOG_WARNING);
 			if($start < 0) $start -= $end;
 			$end = 0;
@@ -99,7 +110,8 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		}
 		$c = $this->llen($key);
 		#$this->proxy->log("C: {$c}, end: $end", LOG_WARNING);
-		$c = $this->executeStmt($s, array($key, $c-$end));
+		$sql = str_replace('<C>', $c-$end, $this->sql[$s]);
+		$c = $this->executeStmt($sql, array($key));
 		$this->proxy->db->unlock();
 		#$this->proxy->log("Removed {$c} elements from {$s}", LOG_WARNING);
 	}
@@ -118,12 +130,14 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		}
 	
 		$offset = $start;
-		$limit = ($stop < 0) ? -1 : $stop-$start+1;
+		$limit = ($stop < 0) ? null : $stop-$start+1;
+		if($limit === 0) return array(); // impossible limits
+		$sql = $this->limit($s, $limit, $offset);
 	
 		//fprintf(STDERR, "%d %d -> LIMIT %d OFFSET %d\n", $start, $stop, $limit, $offset);
 	
-		$stmt = $this->getStmt($s);
-		$stmt->execute(array($key, $limit, $offset));
+		$stmt = $this->getStmt($sql);
+		$stmt->execute(array($key));
 	
 		$data = $stmt->fetchAll(PDO::FETCH_NUM);
 	
@@ -155,7 +169,8 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		}
 		if($count == 0) $count = -1;
 	
-		$c = $this->executeStmt($s, array($key, $value, Plodis::TYPE_LIST, $count));
+		$sql = str_replace('<C>', $count, $this->sql[$s]);
+		$c = $this->executeStmt($sql, array($key, $value, Plodis::TYPE_LIST));
 		if($c == 0) {
 			$this->proxy->generic->verify($key, 'list');
 		}
@@ -208,12 +223,13 @@ class Plodis_List extends Plodis_Group implements Redis_List_2_6_0 {
 		$freq = $this->proxy->options['poll_frequency'];
 		$us = $freq * 1000000; // microseconds
 	
-		$pop = $this->proxy->db->cachedStmt($this->sql[$type]);
+		$s = $this->limit($type, 1, 0);
+		$pop = $this->proxy->db->cachedStmt($s);
 		$del = $this->proxy->db->cachedStmt($this->sql['list_del']);
 		
 		while(true) {
 			$this->proxy->db->lock();
-			$pop->execute(array($key, 1, 0));
+			$pop->execute(array($key));
 			$result = $pop->fetch(PDO::FETCH_NUM);
 			if($result) {
 				try {

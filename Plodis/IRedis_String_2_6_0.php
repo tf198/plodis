@@ -9,7 +9,7 @@
  * @author Tris Forster
  * @version 2.6.0
  */
-interface Redis_String_2_6_0 {
+interface IRedis_String_2_6_0 {
 
     /**
      * Redis server version

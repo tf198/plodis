@@ -1,7 +1,7 @@
 <?php
-require_once PLODIS_BASE . "/interfaces/Redis_Generic_2_6_0.php";
+require_once "IRedis_Generic_2_6_0.php";
 
-class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
+class Plodis_Generic extends Plodis_Group implements IRedis_Generic_2_6_0 {
 	
 	/**
 	 * How often in seconds to purge expired items
@@ -10,16 +10,16 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	public static $purge_frequency = 0.2;
 	
 	protected $sql = array(
-		'select_key' 	=> 'SELECT item, expiry FROM <DB> WHERE key=?',
-		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
-		'set_expiry'	=> 'UPDATE <DB> SET expiry=? WHERE key=?',
+		'select_key' 	=> 'SELECT item, expiry FROM <DB> WHERE pkey=?',
+		'delete_key'	=> 'DELETE FROM <DB> WHERE pkey=?',
+		'set_expiry'	=> 'UPDATE <DB> SET expiry=? WHERE pkey=?',
 		'alarm'			=> 'SELECT MIN(expiry) FROM <DB> WHERE expiry IS NOT NULL',
 		'expire'		=> 'DELETE FROM <DB> WHERE expiry IS NOT NULL AND expiry < ?',
-		'get_keys' 		=> 'SELECT DISTINCT key FROM <DB> ORDER BY id',
-		'get_fuzzy_keys'=> 'SELECT DISTINCT key FROM <DB> WHERE key LIKE ? ORDER BY id',
-		'type'			=> 'SELECT type FROM <DB> WHERE key=? LIMIT 1',
-		'rename'		=> 'UPDATE <DB> SET key=? WHERE key=?',
-		'random'		=> 'SELECT DISTINCT key FROM <DB> ORDER BY RANDOM() LIMIT 1',
+		'get_keys' 		=> 'SELECT DISTINCT pkey FROM <DB> ORDER BY id',
+		'get_fuzzy_keys'=> 'SELECT DISTINCT pkey FROM <DB> WHERE pkey LIKE ? ORDER BY id',
+		'type'			=> 'SELECT type FROM <DB> WHERE pkey=? LIMIT 1',
+		'rename'		=> 'UPDATE <DB> SET pkey=? WHERE pkey=?',
+		'random'		=> 'SELECT DISTINCT pkey FROM <DB> ORDER BY RANDOM() LIMIT 1',
 	);
 	
 	private $alarm = 0;
@@ -118,7 +118,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 	function move($key, $db) {
 		$this->proxy->db->lock();
 		// TODO: finish this
-		$sql = "INSERT INTO plodis_{$db} SELECT * FROM <DB> WHERE key=?";
+		$sql = "INSERT INTO plodis_{$db} SELECT * FROM <DB> WHERE pkey=?";
 		$stmt = $this->proxy->db->cachedStmt($sql);
 		$stmt->execute(array($key));
 		$this->del($key);
@@ -219,7 +219,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		$sql = "SELECT " . implode(', ', $fields) . " FROM " . implode(' ', $from);
 		
 		$params[] = $key;
-		$sql .= " WHERE t_0.key=?";
+		$sql .= " WHERE t_0.pkey=?";
 		
 		$sql .= " ORDER BY {$by}";
 		
@@ -233,7 +233,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		//var_dump($sql);
 		
 		if($store) {
-			$sql = "INSERT INTO <DB> (key, type, item) " . $sql;
+			$sql = "INSERT INTO <DB> (pkey, type, item) " . $sql;
 			$stmt = $this->proxy->db->cachedStmt($sql);
 			$stmt->execute($params);
 		} else {
@@ -251,7 +251,7 @@ class Plodis_Generic extends Plodis_Group implements Redis_Generic_2_6_0 {
 		if(!isset($map[$pattern])) {
 			$k = 't_' . count($map);
 			$map[$pattern] = $k;
-			$from[] = "LEFT JOIN <DB> {$k} ON {$k}.key=REPLACE(?, '*', t_0.{$loc})";
+			$from[] = "LEFT JOIN <DB> {$k} ON {$k}.pkey=REPLACE(?, '*', t_0.{$loc})";
 			$params[] = $pattern;
 		} else {
 			$k = $map[$pattern];

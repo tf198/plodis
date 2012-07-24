@@ -1,6 +1,6 @@
 <?php
 
-require_once PLODIS_BASE . '/interfaces/Redis_Hash_2_6_0.php';
+require_once 'IRedis_Hash_2_6_0.php';
 
 /**
  * Redis hash methods for version 2.6.0
@@ -11,17 +11,17 @@ require_once PLODIS_BASE . '/interfaces/Redis_Hash_2_6_0.php';
  * @author Tris Forster
  * @version 2.6.0
  */
-class Plodis_Hash extends Plodis_Group implements Redis_Hash_2_6_0 {
+class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_6_0 {
 
 	protected $sql = array(
-		'h_select'		=> 'SELECT field, item, type FROM <DB> WHERE key=? ORDER BY id',
-		'hset' 			=> 'INSERT OR REPLACE INTO <DB> (key, type, field, item) VALUES (?, ?, ?, ?)',
-		'h_update' 		=> 'UPDATE <DB> SET item=? WHERE key=? AND field=?',
-		'h_delete'		=> 'DELETE FROM <DB> WHERE key=? AND field=?',
-		'hlen'			=> 'SELECT COUNT(id) FROM <DB> WHERE key=?',
-		'hget'			=> 'SELECT id, item, type FROM <DB> WHERE key=? AND field=?',
-		'hincrby'		=> 'UPDATE <DB> SET item=item+? WHERE key=? AND field=?',
-		'hsetnx'		=> 'INSERT OR IGNORE INTO <DB> (key, type, field, item) VALUES (?, ?, ?, ?)',
+		'h_select'		=> 'SELECT field, item, type FROM <DB> WHERE pkey=? ORDER BY id',
+		'hset' 			=> 'REPLACE INTO <DB> (pkey, type, field, item) VALUES (?, ?, ?, ?)',
+		'h_update' 		=> 'UPDATE <DB> SET item=? WHERE pkey=? AND field=?',
+		'h_delete'		=> 'DELETE FROM <DB> WHERE pkey=? AND field=?',
+		'hlen'			=> 'SELECT COUNT(id) FROM <DB> WHERE pkey=?',
+		'hget'			=> 'SELECT id, item, type FROM <DB> WHERE pkey=? AND field=?',
+		'hincrby'		=> 'UPDATE <DB> SET item=item+? WHERE pkey=? AND field=?',
+		'hsetnx'		=> 'INSERT OR IGNORE INTO <DB> (pkey, type, field, item) VALUES (?, ?, ?, ?)', // MySQL INSERT IGNORE
 	);
 	
     /**

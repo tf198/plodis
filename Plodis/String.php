@@ -1,19 +1,19 @@
 <?php
-require_once PLODIS_BASE . "/interfaces/Redis_String_2_6_0.php";
+require_once "IRedis_String_2_6_0.php";
 
-class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
+class Plodis_String extends Plodis_Group implements IRedis_String_2_6_0 {
 	
 	protected $sql = array(
-		'select_key' 	=> 'SELECT item, type FROM <DB> WHERE key=?',
-		'insert_key' 	=> 'INSERT INTO <DB> (key, type, item, expiry) VALUES (?, ?, ?, ?)',
-		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=?, field=NULL WHERE key=?',
-		'delete_key'	=> 'DELETE FROM <DB> WHERE key=?',
-		'incrby' 		=> 'UPDATE <DB> SET item=item + ? WHERE key=?',
-		'strlen'		=> 'SELECT LENGTH(item), type FROM <DB> WHERE key=?',
-		'append'		=> 'UPDATE <DB> SET item=item || ? WHERE key=?',
-		'getbytes'		=> 'SELECT SUBSTR(item, ?, ?), type FROM <DB> WHERE key=?',
-		'getbytes_end'	=> 'SELECT SUBSTR(item, ?), type FROM <DB> WHERE key=?',
-		'setbytes'		=> 'UPDATE <DB> SET item=SUBSTR(item,0,?) || ? || substr(item,?) WHERE key=?', // not sure how efficient this is
+		'select_key' 	=> 'SELECT item, type FROM <DB> WHERE pkey=?',
+		'insert_key' 	=> 'INSERT INTO <DB> (pkey, type, item, expiry) VALUES (?, ?, ?, ?)',
+		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=?, field=NULL WHERE pkey=?',
+		'delete_key'	=> 'DELETE FROM <DB> WHERE pkey=?',
+		'incrby' 		=> 'UPDATE <DB> SET item=item + ? WHERE pkey=?',
+		'strlen'		=> 'SELECT LENGTH(item), type FROM <DB> WHERE pkey=?',
+		'append'		=> 'UPDATE <DB> SET item=item || ? WHERE pkey=?',
+		'getbytes'		=> 'SELECT SUBSTR(item, ?, ?), type FROM <DB> WHERE pkey=?',
+		'getbytes_end'	=> 'SELECT SUBSTR(item, ?), type FROM <DB> WHERE pkey=?',
+		'setbytes'		=> 'UPDATE <DB> SET item=SUBSTR(item,0,?) || ? || substr(item,?) WHERE pkey=?', // not sure how efficient this is
 	);
 	
 	function set($key, $value) {
@@ -270,7 +270,7 @@ class Plodis_String extends Plodis_Group implements Redis_String_2_6_0 {
 	
 	function msetnx($pairs) {
 		$this->proxy->db->lock();
-		$sql = "SELECT key FROM <DB> WHERE KEY IN (?";
+		$sql = "SELECT pkey FROM <DB> WHERE pkey IN (?";
 		for($i=1, $c=count($pairs); $i<$c; $i++) $sql .= ", ?";
 		$sql .= ")";
 		

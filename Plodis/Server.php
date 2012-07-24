@@ -1,5 +1,5 @@
 <?php
-require_once PLODIS_BASE . "/interfaces/Redis_Server_2_6_0.php";
+require_once "IRedis_Server_2_6_0.php";
 
 /**
  * Redis server methods for version 2.6.0
@@ -11,13 +11,13 @@ require_once PLODIS_BASE . "/interfaces/Redis_Server_2_6_0.php";
  * @author Tris Forster
  * @version 2.6.0
  */
-class Plodis_Server extends Plodis_Group implements Redis_Server_2_6_0 {
+class Plodis_Server extends Plodis_Group implements IRedis_Server_2_6_0 {
 
 	protected $sql = array(
-		'dbsize'		=> 'SELECT COUNT(DISTINCT key) FROM <DB>',
+		'dbsize'		=> 'SELECT COUNT(DISTINCT pkey) FROM <DB>',
 		'dbs'			=> "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'plodis_%'",
 		'flushdb'		=> "DELETE FROM <DB>",
-		'expires'		=> "SELECT COUNT(DISTINCT key) FROM <DB> WHERE expiry IS NOT NULL",
+		'expires'		=> "SELECT COUNT(DISTINCT pkey) FROM <DB> WHERE expiry IS NOT NULL",
 	);
 	
 	private function executeStmtDB($which, $db, $params=array(), $column=null) {

@@ -38,27 +38,29 @@ bench('init (' . $key . ')');
 
 switch($backend) {
 	case 'PREDIS':
-		require "predis_0.7.3.phar";
+		require "predis.phar";
 		bench('include PREDIS');
 		
 		$db = new Predis\Client($server);
 		bench('construct PREDIS');
 		break;
 	case 'PLODIS':
+	case 'MYSQL':
 		require "Plodis.php";
 		bench('include PLODIS');
 		
-		$pdo = new PDO('sqlite:' . BENCH_DATA);
+		$pdo = ($backend == 'PLODIS') ? new PDO('sqlite:' . BENCH_DATA) : new PDO($argv[2], $argv[3], $argv[4]);
 		bench('PDO from existing data');
 		
-		$db = new Plodis($pdo);
+		$opt = ($backend == 'PLODIS');
+		$db = new Plodis($pdo, true, $opt);
 		bench('construct PLODIS');
 		
 		$db->setOption('return_counts', false);
 		$db->setOption('validation_checks', false);
 		break;
 	default:
-		throw new Exception("Unknown backend: " . BACKEND);
+		throw new Exception("Unknown backend: " . $backend);
 }
 
 bench("Starting loop tests - " . LOOP_SIZE . " iterations");
@@ -73,21 +75,12 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('SET (update)', LOOP_SIZE);
 
-if($backend == 'PLODIS') {
-	$db->db->lock();
+$replies = $db->pipeline(function($pipe) use($key) {
 	for($i=0; $i<LOOP_SIZE; $i++) {
-		$db->set("{$key}_{$i}", $i);
+		$pipe->set("{$key}_{$i}", $i);
 	}
-	$db->db->unlock();
-	bench('SET (update, locked)', LOOP_SIZE);
-} else {
-	$replies = $db->pipeline(function($pipe) use($key) {
-		for($i=0; $i<LOOP_SIZE; $i++) {
-			$pipe->set("{$key}_{$i}", $i);
-		}
-	});
-	bench('SET (pipelined)', LOOP_SIZE);
-}
+});
+bench('SET (pipelined)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
  	assert($db->get("{$key}_{$i}") == $i);
@@ -95,22 +88,12 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('GET', LOOP_SIZE);
 
-if($backend == 'PLODIS') {
-	$db->db->lock();
+$replies = $db->pipeline(function($pipe) use($key) {
 	for($i=0; $i<LOOP_SIZE; $i++) {
-		assert($db->get("{$key}_{$i}") == $i);
+		$pipe->get("{$key}_{$i}");
 	}
-	$db->db->unlock();
-	bench('GET (locked)', LOOP_SIZE);
-} else {
-	$replies = $db->pipeline(function($pipe) use($key) {
-		for($i=0; $i<LOOP_SIZE; $i++) {
-			$pipe->get("{$key}_{$i}");
-		}
-	});
-	foreach($replies as $i=>$val) assert($i == $val);
-	bench('GET (pipelined)', LOOP_SIZE);
-}
+});
+bench('GET (pipelined)', LOOP_SIZE);
 
 for($i=0; $i<LOOP_SIZE; $i++) {
 	$db->lpush("list_{$key}", $i);

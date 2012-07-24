@@ -24,3 +24,11 @@ src/predis:
 predis.phar: src/predis
 	php -d phar.readonly=0 $</bin/create-phar.php
 	mv predis_*.phar $@
+
+%.check:
+	phpunit -c phpunit_$*.xml
+
+plodis.check:
+	phpunit
+
+check: plodis.check predis.check mysql.check

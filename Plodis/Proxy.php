@@ -136,6 +136,12 @@ class Plodis_Proxy {
 	public function setOption($name, $value) {
 		$this->options[$name] = $value;
 	}
+	
+	public function pipeline($callable) {
+		$this->db->lock();
+		$callable($this);
+		$this->db->unlock();
+	}
 }
 
 /**

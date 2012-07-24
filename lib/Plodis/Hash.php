@@ -9,7 +9,7 @@ require_once 'IRedis_Hash_2_4_0.php';
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
 class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
 
@@ -18,7 +18,7 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
 		'hset' 			=> 'REPLACE INTO <DB> (pkey, type, field, item) VALUES (?, ?, ?, ?)',
 		'h_update' 		=> 'UPDATE <DB> SET item=? WHERE pkey=? AND field=?',
 		'h_delete'		=> 'DELETE FROM <DB> WHERE pkey=? AND field=?',
-		'hlen'			=> 'SELECT COUNT(id) FROM <DB> WHERE pkey=?',
+		'hlen'			=> 'SELECT COUNT(*) FROM <DB> WHERE pkey=? AND type=?',
 		'hget'			=> 'SELECT id, item, type FROM <DB> WHERE pkey=? AND field=?',
 		'hincrby'		=> 'UPDATE <DB> SET item=item+? WHERE pkey=? AND field=?',
 		'hsetnx'		=> 'INSERT OR IGNORE INTO <DB> (pkey, type, field, item) VALUES (?, ?, ?, ?)',
@@ -190,9 +190,7 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
      * @return null no documentation available
      */
     public function hlen($key) {
-    	$this->proxy->generic->gc();
-    	$data = $this->fetchOne('hlen', array($key));
-    	return (int) $data[0];
+    	return $this->countItems('hlen', array($key, Plodis::TYPE_HASH), $key);
     }
 
     /**

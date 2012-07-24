@@ -9,6 +9,8 @@ class Plodis_Group {
 	
 	protected $sql = array();
 	
+	protected $type = 'unknown';
+	
 	function __construct($proxy) {
 		$this->proxy = $proxy;
 	}
@@ -53,5 +55,14 @@ class Plodis_Group {
 	public function pluck(&$arr, $col) {
 		foreach($arr as &$row) $row = $row[$col];
 		return $arr;
+	}
+	
+	public function countItems($which, $params, $key) {
+		$this->proxy->generic->gc();
+		$this->proxy->db->lock();
+		$c = $data = $this->fetchOne($which, $params, 0);
+		if($c == 0) $this->proxy->generic->verify($key, $this->type, 1);
+		$this->proxy->db->unlock();
+		return (int) $c;
 	}
 }

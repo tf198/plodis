@@ -19,6 +19,10 @@ class Plodis_Proxy {
 		self::TYPE_ZSET	=> 'zset',
 	);
 	
+	// 32bit `infinities`
+	const POS_INF = 4294967295;
+	const NEG_INF = -4294967295;
+	
 	/**
 	 * Generic module
 	 * @var Plodis_Generic
@@ -80,7 +84,6 @@ class Plodis_Proxy {
 		$this->generic->gc();
 	}
 	
-	
 	/**
 	 * Use this to dynamically load Plodis Groups
 	 * @param string $name
@@ -100,7 +103,7 @@ class Plodis_Proxy {
 		if(isset($this->$name)) return $this->$name;
 		
 		if($klass === null) {
-			$title = ucfirst($name);
+			$title = str_replace(' ', '_', ucwords(str_replace('_', ' ', $name)));
 			$klass = "Plodis_{$title}";
 			if(!is_readable(PLODIS_BASE . "/Plodis/{$title}.php")) throw new RuntimeException("Unknown module: {$name}");
 			require_once PLODIS_BASE . "/Plodis/{$title}.php";
@@ -331,6 +334,7 @@ class Plodis_DB {
 		}
 	}
 }
+
 
 class PlodisError extends RuntimeException {}
 

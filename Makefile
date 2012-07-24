@@ -1,6 +1,6 @@
 REDIS_VERSION=2_4_0
 
-REDIS_GROUPS=Connection Server Generic String List Hash Set Pubsub
+REDIS_GROUPS=Connection Server Generic String List Hash Set Sorted_Set Pubsub
 
 GROUP_INTERFACES=$(addprefix lib/Plodis/IRedis_,$(addsuffix _$(REDIS_VERSION).php,$(REDIS_GROUPS)))
 

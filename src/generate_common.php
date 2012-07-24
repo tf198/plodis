@@ -65,6 +65,11 @@ function redis_command_info($cmd, $command) {
 	
 	if(!isset($command['arguments'])) $command['arguments'] = array();
 	
+	if($cmd == 'ZADD') {
+		$command['arguments'] = array_slice($command['arguments'], 0, 3);
+		$command['arguments'][2]['optional'] = true;
+	}
+	
 	$params = array();
 	$raw_params = array();
 	$code = array();

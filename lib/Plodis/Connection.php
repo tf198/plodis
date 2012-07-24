@@ -10,7 +10,7 @@ require_once 'IRedis_Connection_2_4_0.php';
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
 class Plodis_Connection extends Plodis_Group implements IRedis_Connection_2_4_0 {
 	

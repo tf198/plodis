@@ -9,7 +9,7 @@ require_once "IRedis_Server_2_4_0.php";
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
 class Plodis_Server extends Plodis_Group implements IRedis_Server_2_4_0 {
 

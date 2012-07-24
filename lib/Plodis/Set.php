@@ -9,13 +9,13 @@ require_once "IRedis_Set_2_4_0.php";
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
 class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
 
 	protected $sql = array(
 		'sadd'		=> 'INSERT INTO <DB> (pkey, type, field) VALUES (?, ?, ?)',
-		'scard' 	=> 'SELECT COUNT(*) FROM <DB> WHERE pkey=?',
+		'scard' 	=> 'SELECT COUNT(*) FROM <DB> WHERE pkey=? AND type=?',
 		'smembers' 	=> 'SELECT field, type FROM <DB> WHERE pkey=? ORDER BY id',
 		'srand'		=> 'SELECT id, field, type FROM <DB> WHERE pkey=? ORDER BY RANDOM() LIMIT 1',
 		'srand_MYSQL' => 'SELECT id, field, type FROM <DB> WHERE pkey=? ORDER BY RAND() LIMIT 1',
@@ -66,12 +66,15 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
      *
      */
     public function scard($key) {
+    	return $this->countItems('scard', array($key, Plodis::TYPE_SET), $key);
+    	/*
     	$this->proxy->generic->gc();
     	$this->proxy->db->lock();
     	$this->proxy->generic->verify($key, 'set', 1);
     	$data = $this->fetchOne('scard', array($key));
     	$this->proxy->db->unlock();
     	return (int) $data[0];
+    	*/
     }
 
     private function scustom($sql, $keys) {

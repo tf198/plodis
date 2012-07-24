@@ -1,10 +1,11 @@
 <?php
 //if(!defined('BACKEND')) define('BACKEND', 'PLODIS');
 
-if(BACKEND == 'PLODIS') {
+if(BACKEND == 'PLODIS' || BACKEND == 'MYSQL') {
 	require_once "Plodis.php";
+	Plodis::$log_level = LOG_WARNING;
 } elseif(BACKEND == 'PREDIS') {
-	require_once "predis_0.7.3.phar";
+	require_once "predis.phar";
 }
 
 abstract class BaseTest extends PHPUnit_Framework_TestCase {
@@ -20,14 +21,23 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 	public $skip_checks = false;
 	
 	function setUp() {
-		if(BACKEND == 'PLODIS') {
-			$this->db = new Plodis(new PDO('sqlite::memory:'));
-		} elseif(BACKEND == 'PREDIS') {
-			$this->db = new Predis\Client(PREDIS_SERVER, array('profile' => '2.6'));
-			$this->db->flushall();
-		} else {
-			throw new Exception("No backend defined: " . BACKEND);
+	switch(BACKEND) {
+			case 'PLODIS':
+				$this->db = new Plodis(':memory:');
+				break;
+			case 'PREDIS':
+				$this->db = new Predis\Client(PREDIS_SERVER, array('profile' => '2.6'));
+				$this->db->flushall();
+				break;
+			case 'MYSQL':
+				$pdo = new PDO(MYSQL_DSN, MYSQL_USER, MYSQL_PASS);
+				$this->db = new Plodis($pdo, false, false);
+				$this->db->flushdb();
+				break;
+			default:
+				throw new Exception("No backend defined: " . BACKEND);
 		}
+		
 		$this->db->mset(array('check_1' => 'one', 'check_2' => 'two'));
 		$this->db->lpush('check_3', 'one', 'two');
 		$this->db->rpush('check_3', 'three', 'four');
@@ -39,6 +49,7 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 	function tearDown() {
 		if($this->skip_checks) return;
 		if(BACKEND == 'PREDIS') return;
+		
 		$this->assertSame(array('one', 'two'), $this->db->mget('check_1', 'check_2'));
 		$this->assertSame(array('two', 'one', 'three', 'four'), $this->db->lrange('check_3', 0, -1));
 		$this->assertSame(array('1', '2'), $this->db->hvals('check_4'));

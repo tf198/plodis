@@ -21,5 +21,6 @@ Plodis.php: src/generate_proxy.php src/generate_common.php src/redis-doc $(GROUP
 src/predis:
 	git clone git://github.com/nrk/predis.git $@ || true
 	
-predis_0.7.3.phar: src/predis
+predis.phar: src/predis
 	php -d phar.readonly=0 $</bin/create-phar.php
+	mv predis_*.phar $@

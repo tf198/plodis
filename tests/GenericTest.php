@@ -27,7 +27,8 @@ class GenericTest extends BaseTest {
 	function testKeys() {
 		$this->assertSame($this->check_keys, $this->db->keys('*'));
 		
-		$loc = new Plodis(':memory:');
+		$this->db->select(1);
+		$loc = $this->db;
 		
 		// no keys
 		$this->assertSame(array(), $loc->keys('*'));
@@ -42,6 +43,9 @@ class GenericTest extends BaseTest {
 		$this->assertSame(array('two', 'three'), $loc->keys('t*'));
 		$this->assertSame(array('one', 'three'), $loc->keys('*e*'));
 		$this->assertSame(array(), $loc->keys('z*'));
+		
+		$this->db->flushdb();
+		$this->db->select(0);
 	}
 	
 	function testExpire() {
@@ -90,7 +94,6 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testPTTL() {
-		if(strcmp(Plodis::REDIS_VERSION, '2.6.0') < 0)  $this->markTestSkipped();
 		// unset
 		$this->assertSame(-1, $this->db->pttl('test1'));
 		
@@ -108,7 +111,6 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testPExpire() {
-		if(strcmp(Plodis::REDIS_VERSION, '2.6.0') < 0)  $this->markTestSkipped();
 		$this->db->set('test1', 1);
 		
 		// normal usage
@@ -188,21 +190,23 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testRandom() {
-		$loc = new Plodis(':memory:');
+		$this->db->select(1);
 		
-		$this->assertSame(null, $loc->randomkey());
+		$this->assertSame(null, $this->db->randomkey());
 		
 		$values = array('a' => 1, 'b' => 2, 'c' => 3, 'd' => 4, 'e' => 5);
-		$loc->mset($values);
+		$this->db->mset($values);
 		$diff = 0;
 		$prev = '';
 		for($i=0; $i<10; $i++) {
-			$c = $loc->randomkey();
+			$c = $this->db->randomkey();
 			if($c != $prev) $diff++;
 			$this->assertTrue(array_key_exists($c, $values));
 			$prev = $c;
 		}
 		$this->assertGreaterThan(5, $diff);
+		$this->db->flushdb();
+		$this->db->select(0);
 	}
 	
 	function testSort() {

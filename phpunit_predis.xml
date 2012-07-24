@@ -2,7 +2,6 @@
 <phpunit
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:noNamespaceSchemaLocation="http://gooh.github.com/phpunit-schema/3.7/phpunit.xsd"
-	bootstrap="tests/bootstrap.php" 
 	colors="true">
 	<testsuites>
 		<testsuite name="Plodis Tests">

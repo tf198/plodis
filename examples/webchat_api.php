@@ -3,10 +3,10 @@ header('Content-type: application/json');
 $base = dirname(dirname(__FILE__));
 
 try {
-	include "{$base}/Plodis.php";
+	include "{$base}/lib/Plodis.php";
 
-	$datafile = "{$base}/data/webchat.sq3";
-	$plodis = new Plodis($datafile);
+	$pdo = new PDO("sqlite:{$base}/data/webchat.sq3");
+	$plodis = new Plodis($pdo);
 
 	$action = (isset($_GET['action'])) ? $_GET['action'] : 'listen';
 	$user = (isset($_GET['user'])) ? $_GET['user'] : null;

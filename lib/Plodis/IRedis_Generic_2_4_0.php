@@ -1,21 +1,21 @@
 <?php
 /**
- * Redis generic methods for version 2.6.0
+ * Redis generic methods for version 2.4.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
-interface IRedis_Generic_2_6_0 {
+interface IRedis_Generic_2_4_0 {
 
     /**
      * Redis server version
      * @var string
      */
-    const REDIS_VERSION = "2.6.0";
+    const REDIS_VERSION = "2.4.0";
 	
     const REDIS_GROUP = "generic";
 
@@ -32,20 +32,6 @@ interface IRedis_Generic_2_6_0 {
      *
      */
     public function del($key);
-
-    /**
-     * Return a serialized version of the value stored at the specified key.
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/dump DUMP
-     *
-     * @param string $key
-     * @return string the serialized value.
-     *
-     */
-    public function dump($key);
 
     /**
      * Determine if a key exists
@@ -113,23 +99,6 @@ interface IRedis_Generic_2_6_0 {
      *
      */
     public function keys($pattern);
-
-    /**
-     * Atomically transfer a key from a Redis instance to another one.
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/migrate MIGRATE
-     *
-     * @param string $host
-     * @param string $port
-     * @param string $key
-     * @param integer $destination_db
-     * @param integer $timeout
-     * @return null The command returns OK on success.
-     */
-    public function migrate($host, $port, $key, $destination_db, $timeout);
 
     /**
      * Move a key to another database
@@ -207,53 +176,6 @@ interface IRedis_Generic_2_6_0 {
     public function persist($key);
 
     /**
-     * Set a key's time to live in milliseconds
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/pexpire PEXPIRE
-     *
-     * @param string $key
-     * @param integer $milliseconds
-     * @return null
-     */
-    public function pexpire($key, $milliseconds);
-
-    /**
-     * Set the expiration for a key as a UNIX timestamp specified in milliseconds
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/pexpireat PEXPIREAT
-     *
-     * @param string $key
-     * @param integer $milliseconds_timestamp
-     * @return integer specifically
-     *   
-     *   * `1` if the timeout was set.
-     *   * `0` if `key` does not exist or the timeout could not be set (see `EXPIRE`).
-     *
-     */
-    public function pexpireat($key, $milliseconds_timestamp);
-
-    /**
-     * Get the time to live for a key in milliseconds
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/pttl PTTL
-     *
-     * @param string $key
-     * @return integer Time to live in milliseconds or `-1` when `key` does not exist
-     *   or does not have a timeout.
-     *
-     */
-    public function pttl($key);
-
-    /**
      * Return a random key from the keyspace
      *
      * @since 1.0.0
@@ -297,22 +219,6 @@ interface IRedis_Generic_2_6_0 {
      *
      */
     public function renamenx($key, $newkey);
-
-    /**
-     * Create a key using the provided serialized value, previously obtained using DUMP.
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/restore RESTORE
-     *
-     * @param string $key
-     * @param integer $ttl
-     * @param string $serialized_value
-     * @return null The command returns OK on success.
-     *
-     */
-    public function restore($key, $ttl, $serialized_value);
 
     /**
      * Sort the elements in a list, set or sorted set

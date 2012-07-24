@@ -1,21 +1,21 @@
 <?php
 /**
- * Redis hash methods for version 2.6.0
+ * Redis hash methods for version 2.4.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
-interface IRedis_Hash_2_6_0 {
+interface IRedis_Hash_2_4_0 {
 
     /**
      * Redis server version
      * @var string
      */
-    const REDIS_VERSION = "2.6.0";
+    const REDIS_VERSION = "2.4.0";
 	
     const REDIS_GROUP = "hash";
 
@@ -99,22 +99,6 @@ interface IRedis_Hash_2_6_0 {
      *
      */
     public function hincrby($key, $field, $increment);
-
-    /**
-     * Increment the float value of a hash field by the given amount
-     *
-     * @since 2.6.0
-     * @api
-     * @group hash
-     * @link http://redis.io/commands/hincrbyfloat HINCRBYFLOAT
-     *
-     * @param string $key
-     * @param string $field
-     * @param double $increment
-     * @return string the value of `field` after the increment.
-     *
-     */
-    public function hincrbyfloat($key, $field, $increment);
 
     /**
      * Get all the fields in a hash

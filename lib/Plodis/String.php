@@ -1,7 +1,7 @@
 <?php
-require_once "IRedis_String_2_6_0.php";
+require_once "IRedis_String_2_4_0.php";
 
-class Plodis_String extends Plodis_Group implements IRedis_String_2_6_0 {
+class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 	
 	protected $sql = array(
 		'select_key' 	=> 'SELECT item, type FROM <DB> WHERE pkey=?',

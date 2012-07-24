@@ -1,7 +1,7 @@
 <?php
-require_once "IRedis_Pubsub_2_6_0.php";
+require_once "IRedis_Pubsub_2_4_0.php";
 
-class Plodis_Pubsub extends Plodis_Group implements IRedis_Pubsub_2_6_0 {
+class Plodis_Pubsub extends Plodis_Group implements IRedis_Pubsub_2_4_0 {
 	
 	const CHANNEL_PREFIX = '_channel_';
 	

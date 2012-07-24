@@ -1,8 +1,8 @@
 <?php
-require_once "IRedis_Set_2_6_0.php";
+require_once "IRedis_Set_2_4_0.php";
 
 /**
- * Redis set methods for version 2.6.0
+ * Redis set methods for version 2.4.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *
@@ -11,7 +11,7 @@ require_once "IRedis_Set_2_6_0.php";
  * @author Tris Forster
  * @version 2.6.0
  */
-class Plodis_Set extends Plodis_Group implements IRedis_Set_2_6_0 {
+class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
 
 	protected $sql = array(
 		'sadd'		=> 'INSERT INTO <DB> (pkey, type, field) VALUES (?, ?, ?)',

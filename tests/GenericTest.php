@@ -92,7 +92,8 @@ class GenericTest extends BaseTest {
 		$this->db->expireat('test1', time()-10);
 		$this->assertSame(-1, $this->db->ttl('test1'));
 	}
-	
+	/*
+	 * 2.6.0 
 	function testPTTL() {
 		// unset
 		$this->assertSame(-1, $this->db->pttl('test1'));
@@ -120,7 +121,7 @@ class GenericTest extends BaseTest {
 		// non-existing key
 		$this->assertSame(0, $this->db->pexpire('test2', 20));
 	}
-	
+	*/
 	function testExpireOnConstruct() {
 		$this->db->set('test1', 1);
 		
@@ -140,7 +141,7 @@ class GenericTest extends BaseTest {
 	
 	function testAlarm() {
 		$this->db->set('test1', 1);
- 		$this->db->pexpire('test1', 20);
+ 		$this->db->generic->pexpire('test1', 20);
 		
 		$this->assertSame('1', $this->db->get('test1'));
 		usleep(25000); // allow a fraction over 20 milliseconds

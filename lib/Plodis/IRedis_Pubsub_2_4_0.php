@@ -1,21 +1,21 @@
 <?php
 /**
- * Redis pubsub methods for version 2.6.0
+ * Redis pubsub methods for version 2.4.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
-interface IRedis_Pubsub_2_6_0 {
+interface IRedis_Pubsub_2_4_0 {
 
     /**
      * Redis server version
      * @var string
      */
-    const REDIS_VERSION = "2.6.0";
+    const REDIS_VERSION = "2.4.0";
 	
     const REDIS_GROUP = "pubsub";
 

@@ -1,9 +1,9 @@
 <?php
 
-require_once 'IRedis_Hash_2_6_0.php';
+require_once 'IRedis_Hash_2_4_0.php';
 
 /**
- * Redis hash methods for version 2.6.0
+ * Redis hash methods for version 2.4.0
  *
  *
  * @link https://github.com/antirez/redis-doc
@@ -11,7 +11,7 @@ require_once 'IRedis_Hash_2_6_0.php';
  * @author Tris Forster
  * @version 2.6.0
  */
-class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_6_0 {
+class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
 
 	protected $sql = array(
 		'h_select'		=> 'SELECT field, item, type FROM <DB> WHERE pkey=? ORDER BY id',

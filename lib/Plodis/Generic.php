@@ -1,7 +1,7 @@
 <?php
-require_once "IRedis_Generic_2_6_0.php";
+require_once "IRedis_Generic_2_4_0.php";
 
-class Plodis_Generic extends Plodis_Group implements IRedis_Generic_2_6_0 {
+class Plodis_Generic extends Plodis_Group implements IRedis_Generic_2_4_0 {
 	
 	/**
 	 * How often in seconds to purge expired items

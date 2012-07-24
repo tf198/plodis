@@ -230,6 +230,10 @@ class Plodis_DB {
 	 */
 	function cachedStmt($sql) {
 		$sql = str_replace('<DB>', $this->db_table, $sql);
+		
+		// dont cache anything with an OFFSET
+		if(strpos($sql, 'OFFSET')) return $this->conn->prepare($sql);
+		
 		if(!isset($this->stmt_cache[$sql])) {
 			$this->stmt_cache[$sql] = $this->conn->prepare($sql);
 			//fputs(STDERR, "CACHED {$sql}\n");

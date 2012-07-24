@@ -1,8 +1,8 @@
 <?php
-require_once "IRedis_Server_2_6_0.php";
+require_once "IRedis_Server_2_4_0.php";
 
 /**
- * Redis server methods for version 2.6.0
+ * Redis server methods for version 2.4.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *
@@ -11,7 +11,7 @@ require_once "IRedis_Server_2_6_0.php";
  * @author Tris Forster
  * @version 2.6.0
  */
-class Plodis_Server extends Plodis_Group implements IRedis_Server_2_6_0 {
+class Plodis_Server extends Plodis_Group implements IRedis_Server_2_4_0 {
 
 	protected $sql = array(
 		'dbsize'		=> 'SELECT COUNT(DISTINCT pkey) FROM <DB>',

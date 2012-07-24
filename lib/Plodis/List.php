@@ -1,7 +1,7 @@
 <?php
-require_once "IRedis_List_2_6_0.php";
+require_once "IRedis_List_2_4_0.php";
 
-class Plodis_List extends Plodis_Group implements IRedis_List_2_6_0 {
+class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 	
 	protected $sql = array(
 		'lpush_index'	=> 'SELECT MIN(weight) FROM <DB> WHERE pkey=?',
@@ -209,6 +209,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_6_0 {
 		foreach($values as $value) {
 			$stmt->execute(array($key, Plodis::TYPE_LIST, $value, --$id));
 		}
+		unset($stmt);
 	
 		$result = $this->proxy->options['return_counts'] ? $this->llen($key) : -1;
 		$this->proxy->db->unlock();

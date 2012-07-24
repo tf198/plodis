@@ -2,7 +2,7 @@
 //if(!defined('BACKEND')) define('BACKEND', 'PLODIS');
 
 if(BACKEND == 'PLODIS' || BACKEND == 'MYSQL') {
-	require_once "Plodis.php";
+	require_once "lib/Plodis.php";
 	Plodis::$log_level = LOG_WARNING;
 } elseif(BACKEND == 'PREDIS') {
 	require_once "predis.phar";

@@ -46,7 +46,7 @@ switch($backend) {
 		break;
 	case 'PLODIS':
 	case 'MYSQL':
-		require "Plodis.php";
+		require "lib/Plodis.php";
 		bench('include PLODIS');
 		
 		$pdo = ($backend == 'PLODIS') ? new PDO('sqlite:' . BENCH_DATA) : new PDO($argv[2], $argv[3], $argv[4]);

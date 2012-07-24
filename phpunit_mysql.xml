@@ -13,5 +13,6 @@
 		<const name="MYSQL_DSN" value="mysql:host=192.168.100.32;dbname=plodis"/>
 		<const name="MYSQL_USER" value="plodis"/>
 		<const name="MYSQL_PASS" value="plodis"/>
+		<const name="RUN_BENCHMARKS" value="1"/>
 	</php>
 </phpunit>

@@ -72,7 +72,7 @@ class StringTest extends BaseTest {
 		$this->assertSame(3, $this->db->append('test2', 'two'));
 		$this->assertSame('two', $this->db->get('test2'));
 	}
-	
+	/* 2.6.0
 	function testIncrByFloat() {
 		$this->db->set('test1', '7.5');
 		
@@ -89,7 +89,7 @@ class StringTest extends BaseTest {
 		
 		$this->assertThrows('PlodisIncorrectKeyType:', $this->db, 'incrbyfloat', 'check_3', 0.3);
 	}
-	
+	*/
 	function testIncrBy() {
 		$this->db->set('test1', 7);
 	
@@ -155,7 +155,7 @@ class StringTest extends BaseTest {
 		$this->assertSame('is a str', $this->db->getrange('test1', 5, -4));
 		$this->assertSame('s', $this->db->getrange('test1', 3, 3));
 	}
-	
+	/* 2.6.0
 	function testSetBit() {
 		$this->db->setbit('test1', 0, 1);
 		$this->db->setbit('test1', 5, 1);
@@ -264,7 +264,7 @@ class StringTest extends BaseTest {
 		$this->assertSame(1, $this->db->bitop('xor', 'res5', 'test1', 'test2'));
 		$this->assertSame(ord('a' ^ '?'), $this->db->string->getbyte('res5', 0));
 	}
-	
+	*/
 	function testSetEx() {
 		$this->db->setex('test1', 23, 'one');
 		$this->assertEquals(23, $this->db->ttl('test1'));

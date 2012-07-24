@@ -2,15 +2,17 @@
 require_once "BaseTest.php";
 
 class ServerTest extends BaseTest {
+	/* 2.6.0
 	function testTime() {
 		$time = $this->db->time();
 		$this->assertEquals(time(), $time[0], '', 1.0);
 	}
+	*/
 	
 	function testInfo() {
 		if(BACKEND == 'PREDIS') $this->markTestSkipped();
 		$expected = array(
-			'redis_version' => '2.6.0',
+			'redis_version' => '2.4.0',
 			'db0' => 'keys=5,expires=0',
 		);
 		if(BACKEND == 'MYSQL') $expected['db1'] = 'keys=0,expires=0';

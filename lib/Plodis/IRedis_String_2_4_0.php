@@ -1,21 +1,21 @@
 <?php
 /**
- * Redis string methods for version 2.6.0
+ * Redis string methods for version 2.4.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
-interface IRedis_String_2_6_0 {
+interface IRedis_String_2_4_0 {
 
     /**
      * Redis server version
      * @var string
      */
-    const REDIS_VERSION = "2.6.0";
+    const REDIS_VERSION = "2.4.0";
 	
     const REDIS_GROUP = "string";
 
@@ -33,43 +33,6 @@ interface IRedis_String_2_6_0 {
      *
      */
     public function append($key, $value);
-
-    /**
-     * Count set bits in a string
-     *
-     * @since 2.6.0
-     * @api
-     * @group string
-     * @link http://redis.io/commands/bitcount BITCOUNT
-     *
-     * @param string $key
-     * @param integer $start
-     * @param integer $end
-     * @return integer
-     *   
-     *   The number of bits set to 1.
-     *
-     */
-    public function bitcount($key, $start=null, $end=null);
-
-    /**
-     * Perform bitwise operations between strings
-     *
-     * @since 2.6.0
-     * @api
-     * @group string
-     * @link http://redis.io/commands/bitop BITOP
-     *
-     * @param string $operation
-     * @param string $destkey
-     * @param string $key (multiple)
-     * @return integer
-     *   
-     *   The size of the string stored in the destination key, that is equal to the
-     *   size of the longest input string.
-     *
-     */
-    public function bitop($operation, $destkey, $key);
 
     /**
      * Decrement the integer value of a key by one
@@ -190,21 +153,6 @@ interface IRedis_String_2_6_0 {
     public function incrby($key, $increment);
 
     /**
-     * Increment the float value of a key by the given amount
-     *
-     * @since 2.6.0
-     * @api
-     * @group string
-     * @link http://redis.io/commands/incrbyfloat INCRBYFLOAT
-     *
-     * @param string $key
-     * @param double $increment
-     * @return string the value of `key` after the increment.
-     *
-     */
-    public function incrbyfloat($key, $increment);
-
-    /**
      * Get the values of all the given keys
      *
      * @since 1.0.0
@@ -248,21 +196,6 @@ interface IRedis_String_2_6_0 {
      *
      */
     public function msetnx($keys);
-
-    /**
-     * Set the value and expiration in milliseconds of a key
-     *
-     * @since 2.6.0
-     * @api
-     * @group string
-     * @link http://redis.io/commands/psetex PSETEX
-     *
-     * @param string $key
-     * @param integer $milliseconds
-     * @param string $value
-     * @return null
-     */
-    public function psetex($key, $milliseconds, $value);
 
     /**
      * Set the string value of a key

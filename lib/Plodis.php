@@ -7,7 +7,7 @@
 require_once "Plodis/Proxy.php";
 
 /**
- * Proxy for Redis version 2.6.0 methods.  Dispatches calls to the group class
+ * Proxy for Redis version 2.4.0 methods.  Dispatches calls to the group class
  * This class is automatically generated from the Redis docs on github.
  *
  * Included modules: connection, server, generic, string, list, hash, set, pubsub
@@ -15,7 +15,7 @@ require_once "Plodis/Proxy.php";
  * @link https://github.com/antirez/redis-doc
  * @package Plodis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
 class Plodis extends Plodis_Proxy {
 
@@ -23,7 +23,7 @@ class Plodis extends Plodis_Proxy {
 	 * Redis server version
 	 * @var string
 	 */
-	const REDIS_VERSION = "2.6.0";
+	const REDIS_VERSION = "2.4.0";
 
     /**
      * Append a value to a key
@@ -83,48 +83,6 @@ class Plodis extends Plodis_Proxy {
      */
     public function bgsave() {
         return $this->server->bgsave();
-    }
-
-    /**
-     * Count set bits in a string
-     *
-     * @since 2.6.0
-     * @api
-     * @group string
-     * @link http://redis.io/commands/bitcount BITCOUNT
-     *
-     * @param string $key
-     * @param integer $start
-     * @param integer $end
-     * @return integer
-     *   
-     *   The number of bits set to 1.
-     *
-     */
-    public function bitcount($key, $start=null, $end=null) {
-        return $this->string->bitcount($key, $start, $end);
-    }
-
-    /**
-     * Perform bitwise operations between strings
-     *
-     * @since 2.6.0
-     * @api
-     * @group string
-     * @link http://redis.io/commands/bitop BITOP
-     *
-     * @param string $operation
-     * @param string $destkey
-     * @param string $key (multiple)
-     * @return integer
-     *   
-     *   The size of the string stored in the destination key, that is equal to the
-     *   size of the longest input string.
-     *
-     */
-    public function bitop($operation, $destkey, $key) {
-        if(!is_array($key)) $key = array_slice(func_get_args(), 2);
-        return $this->string->bitop($operation, $destkey, $key);
     }
 
     /**
@@ -334,22 +292,6 @@ class Plodis extends Plodis_Proxy {
     public function del($key) {
         if(!is_array($key)) $key = array_slice(func_get_args(), 0);
         return $this->generic->del($key);
-    }
-
-    /**
-     * Return a serialized version of the value stored at the specified key.
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/dump DUMP
-     *
-     * @param string $key
-     * @return string the serialized value.
-     *
-     */
-    public function dump($key) {
-        return $this->generic->dump($key);
     }
 
     /**
@@ -616,24 +558,6 @@ class Plodis extends Plodis_Proxy {
     }
 
     /**
-     * Increment the float value of a hash field by the given amount
-     *
-     * @since 2.6.0
-     * @api
-     * @group hash
-     * @link http://redis.io/commands/hincrbyfloat HINCRBYFLOAT
-     *
-     * @param string $key
-     * @param string $field
-     * @param double $increment
-     * @return string the value of `field` after the increment.
-     *
-     */
-    public function hincrbyfloat($key, $field, $increment) {
-        return $this->hash->hincrbyfloat($key, $field, $increment);
-    }
-
-    /**
      * Get all the fields in a hash
      *
      * @since 2.0.0
@@ -798,23 +722,6 @@ class Plodis extends Plodis_Proxy {
      */
     public function incrby($key, $increment) {
         return $this->string->incrby($key, $increment);
-    }
-
-    /**
-     * Increment the float value of a key by the given amount
-     *
-     * @since 2.6.0
-     * @api
-     * @group string
-     * @link http://redis.io/commands/incrbyfloat INCRBYFLOAT
-     *
-     * @param string $key
-     * @param double $increment
-     * @return string the value of `key` after the increment.
-     *
-     */
-    public function incrbyfloat($key, $increment) {
-        return $this->string->incrbyfloat($key, $increment);
     }
 
     /**
@@ -1055,25 +962,6 @@ class Plodis extends Plodis_Proxy {
     }
 
     /**
-     * Atomically transfer a key from a Redis instance to another one.
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/migrate MIGRATE
-     *
-     * @param string $host
-     * @param string $port
-     * @param string $key
-     * @param integer $destination_db
-     * @param integer $timeout
-     * @return null The command returns OK on success.
-     */
-    public function migrate($host, $port, $key, $destination_db, $timeout) {
-        return $this->generic->migrate($host, $port, $key, $destination_db, $timeout);
-    }
-
-    /**
      * Listen for all requests received by the server in real time
      *
      * @since 1.0.0
@@ -1207,42 +1095,6 @@ class Plodis extends Plodis_Proxy {
     }
 
     /**
-     * Set a key's time to live in milliseconds
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/pexpire PEXPIRE
-     *
-     * @param string $key
-     * @param integer $milliseconds
-     * @return null
-     */
-    public function pexpire($key, $milliseconds) {
-        return $this->generic->pexpire($key, $milliseconds);
-    }
-
-    /**
-     * Set the expiration for a key as a UNIX timestamp specified in milliseconds
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/pexpireat PEXPIREAT
-     *
-     * @param string $key
-     * @param integer $milliseconds_timestamp
-     * @return integer specifically
-     *   
-     *   * `1` if the timeout was set.
-     *   * `0` if `key` does not exist or the timeout could not be set (see `EXPIRE`).
-     *
-     */
-    public function pexpireat($key, $milliseconds_timestamp) {
-        return $this->generic->pexpireat($key, $milliseconds_timestamp);
-    }
-
-    /**
      * Ping the server
      *
      * @since 1.0.0
@@ -1255,23 +1107,6 @@ class Plodis extends Plodis_Proxy {
      */
     public function ping() {
         return $this->connection->ping();
-    }
-
-    /**
-     * Set the value and expiration in milliseconds of a key
-     *
-     * @since 2.6.0
-     * @api
-     * @group string
-     * @link http://redis.io/commands/psetex PSETEX
-     *
-     * @param string $key
-     * @param integer $milliseconds
-     * @param string $value
-     * @return null
-     */
-    public function psetex($key, $milliseconds, $value) {
-        return $this->string->psetex($key, $milliseconds, $value);
     }
 
     /**
@@ -1288,23 +1123,6 @@ class Plodis extends Plodis_Proxy {
     public function psubscribe($patterns) {
         if(!is_array($patterns)) $patterns = array_slice(func_get_args(), 0);
         return $this->pubsub->psubscribe($patterns);
-    }
-
-    /**
-     * Get the time to live for a key in milliseconds
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/pttl PTTL
-     *
-     * @param string $key
-     * @return integer Time to live in milliseconds or `-1` when `key` does not exist
-     *   or does not have a timeout.
-     *
-     */
-    public function pttl($key) {
-        return $this->generic->pttl($key);
     }
 
     /**
@@ -1402,24 +1220,6 @@ class Plodis extends Plodis_Proxy {
      */
     public function renamenx($key, $newkey) {
         return $this->generic->renamenx($key, $newkey);
-    }
-
-    /**
-     * Create a key using the provided serialized value, previously obtained using DUMP.
-     *
-     * @since 2.6.0
-     * @api
-     * @group generic
-     * @link http://redis.io/commands/restore RESTORE
-     *
-     * @param string $key
-     * @param integer $ttl
-     * @param string $serialized_value
-     * @return null The command returns OK on success.
-     *
-     */
-    public function restore($key, $ttl, $serialized_value) {
-        return $this->generic->restore($key, $ttl, $serialized_value);
     }
 
     /**
@@ -1972,26 +1772,6 @@ class Plodis extends Plodis_Proxy {
      */
     public function sync() {
         return $this->server->sync();
-    }
-
-    /**
-     * Return the current server time
-     *
-     * @since 2.6.0
-     * @api
-     * @group server
-     * @link http://redis.io/commands/time TIME
-     *
-     * @return multitype:string, specifically
-     *   
-     *   A multi bulk reply containing two elements
-     *   
-     *   * unix time in seconds.
-     *   * microseconds.
-     *
-     */
-    public function time() {
-        return $this->server->time();
     }
 
     /**

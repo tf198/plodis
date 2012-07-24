@@ -1,21 +1,21 @@
 <?php
 /**
- * Redis server methods for version 2.6.0
+ * Redis server methods for version 2.4.0
  * This interface is automatically generated from the Redis docs on github.
  *
  *
  * @link https://github.com/antirez/redis-doc
  * @package redis
  * @author Tris Forster
- * @version 2.6.0
+ * @version 2.4.0
  */
-interface IRedis_Server_2_6_0 {
+interface IRedis_Server_2_4_0 {
 
     /**
      * Redis server version
      * @var string
      */
-    const REDIS_VERSION = "2.6.0";
+    const REDIS_VERSION = "2.4.0";
 	
     const REDIS_GROUP = "server";
 
@@ -247,23 +247,5 @@ interface IRedis_Server_2_6_0 {
      * @return null
      */
     public function sync();
-
-    /**
-     * Return the current server time
-     *
-     * @since 2.6.0
-     * @api
-     * @group server
-     * @link http://redis.io/commands/time TIME
-     *
-     * @return multitype:string, specifically
-     *   
-     *   A multi bulk reply containing two elements
-     *   
-     *   * unix time in seconds.
-     *   * microseconds.
-     *
-     */
-    public function time();
 
 }

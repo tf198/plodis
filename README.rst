@@ -18,30 +18,30 @@ no changes to your code - both the benchmarks and the unittest suite are run aga
 
 Current Status
 ==============
-Built from Redis 2.6.0 API with certain modules disabled and a few gaps.  Wherever a method is not implemented
+Built from Redis 2.4.0 API with certain modules disabled and a few gaps.  Wherever a method is not implemented
 it will throw a ``PlodisNotImplementedError``.
 
 :Generic (Keys):
-   Full 2.6.0 coverage except DUMP, RESTORE, MIGRATE and OBJECT.
+   Full 2.4.0 coverage except OBJECT.
 :Strings:
-   Full 2.6.0 coverage.
+   Full 2.4.0 coverage.
 :Hashes:
-   Full 2.6.0 coverage.
+   Full 2.4.0 coverage.
 :List:
-   Full 2.6.0 coverage.
+   Full 2.4.0 coverage.
 :Sets:
-   Full 2.6.0 coverage.
+   Full 2.4.0 coverage.
 :Sorted Sets:
    Still to do...
 :Pub/Sub:
-   Full 2.6.0 coverage except PSUBSCRIBE and PUNSUBSCRIBE
+   Full 2.4.0 coverage.
 :Transaction:
    Background implementation. Currently has ``lock()`` and ``unlock()`` methods available
    on the ``Plodis::db`` module though I'll probably make this API compatible very soon.
 :Scripting:
    Not implemented.  Should be possible with the PHP Lua extension though...
 :Connection:
-   Full 2.6.0 coverage.
+   Full 2.4.0 coverage.
 :Server:
    Implemented the methods that make sense...
 
@@ -91,8 +91,8 @@ TODO
 Performance
 ===========
 
-I thought it would be rubbish but actually it's not bad using a dedicated SQLite database.  You can expect ~4-6K SETs per sec and ~13K/s GETs in standard mode 
-but if you lock the database you can get 2-3 times throughput. List operations are fairly consistent around ~6K/s.
+I thought it would be rubbish but actually it's not bad using a dedicated SQLite database.  You can expect ~4-6K SETs per sec and ~9K/s GETs in standard mode 
+but if you lock the database you can get 2-3 times throughput. List operations are fairly consistent around 5K/s.
 As you can see the memory footprint for the package is around 700K - no need to change ``memory_limit`` in your ``php.ini``.  
 
 The benchmarks are all run on my AMD Phenom II x6 3.20Ghz using a *dirty* database - i.e. the data from previous runs is left in so it gives a good idea of real world usage
@@ -108,24 +108,29 @@ Mem (KB)   Time (ms)     Ops   Description
 ---------- ----------- ------- ---------------------------------------
 Total Step Total  Step  ops/s
 ===== ==== ====== ==== ======= =======================================
-  370  370      0    0   24966 init (1499)
-  689  319      2    2     472 include
-  690    0      2    0    3905 PDO from existing data
-  798  108      5    3     326 construct
-  799    0      5    0   34663 Starting loop tests - 1000 iterations
-  906  107    226  221    4517 SET (insert)
-  906    0    383  157    6366 SET (update)
-  906    0    445   61   16351 SET (update, locked)
-  907    0    524   79   12600 GET
-  907    0    555   31   32115 GET (locked)
- 1053  146    777  221    4508 LPUSH
- 1053    0    965  187    5325 RPUSH
- 1056    2   1107  142    7029 LPOP
- 1057    0   1261  154    6488 LLEN
- 1057    0   1438  176    5667 LINDEX
- 1058    1   1570  132    7554 RPOP
- 1058    0   1570    0   45590 cleanup
+  393  393      0    0   39945 init (7294)
+  781  388      2    2     347 include PLODIS
+  781    0      3    0    3236 PDO from existing data
+  930  148     28   25      39 construct PLODIS
+  930    0     28    0   31300 Starting loop tests - 1000 iterations
+ 1120  189    256  227    4389 SET (insert)
+ 1120    0    425  169    5912 SET (update)
+ 1120    0    493   67   14742 SET (pipelined)
+ 1121    0    603  110    9056 GET
+ 1121    0    643   40   24838 GET (pipelined)
+ 1295  173    878  234    4263 LPUSH
+ 1295    0   1074  195    5110 RPUSH
+ 1297    2   1232  158    6297 LPOP
+ 1298    0   1421  188    5295 LLEN
+ 1298    0   1692  270    3693 LINDEX
+ 1300    1   1841  148    6731 RPOP
+ 1390   90   2025  184    5413 HSET
+ 1392    1   2086   60   16556 HGET
+ 1509  117   2213  126    7880 SADD (RAND 10)
+ 1509    0   2339  126    7919 SADD (RAND 100)
+ 1509    0   2339    0   41943 cleanup
 ===== ==== ====== ==== ======= =======================================
+
 
 
 

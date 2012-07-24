@@ -10,5 +10,6 @@
 	</testsuites>
 	<php>
 		<const name="BACKEND" value="PLODIS"/>
+		<const name="RUN_BENCHMARKS" value="1"/>
 	</php>
 </phpunit>

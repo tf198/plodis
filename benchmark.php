@@ -53,11 +53,9 @@ switch($backend) {
 		bench('PDO from existing data');
 		
 		$opt = ($backend == 'PLODIS');
-		$db = new Plodis($pdo, true, $opt);
+		$db = new Plodis($pdo, array('return_counts' => false, 'validation_checks' => false));
 		bench('construct PLODIS');
 		
-		$db->setOption('return_counts', false);
-		$db->setOption('validation_checks', false);
 		break;
 	default:
 		throw new Exception("Unknown backend: " . $backend);
@@ -145,11 +143,10 @@ for($i=0; $i<LOOP_SIZE; $i++) {
 }
 bench('SADD (RAND 100)', LOOP_SIZE);
 
-if($backend == 'PLODIS') {
-	assert($db->generic->gc_count < 10);
-}
+$gc_count = ($db instanceof Plodis) ? $db->generic->gc_count : -1;
 
 // free everything we can
 unset($pdo, $db);
 bench('cleanup');
 fprintf(STDOUT, "===== ==== ====== ==== ======= =======================================\n");
+fprintf(STDOUT, "GC COUNT: {$gc_count}\n");

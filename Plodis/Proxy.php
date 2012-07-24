@@ -48,28 +48,30 @@ class Plodis_Proxy {
 		LOG_DEBUG	=> 'DEBUG',
 	);
 	
-	public $options = array(
-		'validation_checks' => true,
-		'use_type_cache' => true,
-		'return_counts' => true,
-		'return_incr_values' => true,
-		'poll_frequency' => 0.1,
-		'purge_frequency' => 0.2,
+	public static $default_options = array(
+		'validation_checks' 	=> true,
+		'use_type_cache' 		=> true,
+		'return_counts' 		=> true,
+		'return_incr_values' 	=> true,
+		'poll_frequency'		=> 0.1,
+		'purge_frequency'		=> 0.2,
+		'table_base'			=> 'plodis_',
 	);
+	
+	public $options;
 	
 	/**
 	 * @param PDO|string $pdo
 	 * @param boolean $init create tables if neccesary
 	 * @param boolean $opt run SQLite optomisations
 	 */
-	function __construct($pdo, $init=true, $opt=true) {
+	function __construct($pdo, $options=array()) {
+		$this->options = array_merge(self::$default_options, $options);
 		
+		// allow for sqlite target passed as string
 		if(is_string($pdo)) $pdo = new PDO('sqlite:' . $pdo);
 		
 		$this->db = new Plodis_DB($this, $pdo);
-		
-		if($init) $this->db->selectDatabase(0);
-		if($opt) $this->db->optomiseDatabase();
 		
 		// we know we need it so manually load it
 		$this->load('generic');
@@ -159,14 +161,13 @@ class Plodis_DB {
 	 * SQL to optomise file based SQLite databases
 	 * @var multitype:string
 	 */
-	private static $opt_sql = array(
-		'PRAGMA case_sensitive_like = 1',
-		'PRAGMA journal_mode = MEMORY',
-		'PRAGMA temp_store = MEMORY',
-		'PRAGMA synchronous = OFF',
-		//'PRAGMA auto_vacuum = NONE',
-		//'PRAGMA automatic_index = 0',
-		
+	private static $optomisations = array(
+		'SQLITE' => array(
+			'PRAGMA case_sensitive_like = 1',
+			'PRAGMA journal_mode = MEMORY',
+			'PRAGMA temp_store = MEMORY',
+			'PRAGMA synchronous = OFF',
+		),
 	);
 	
 	/**
@@ -186,7 +187,7 @@ class Plodis_DB {
 	
 	private $stmt_cache = array();
 	
-	private $db_table = "plodis_0";
+	private $db_table;
 	
 	private $initialised = array();
 	
@@ -199,10 +200,13 @@ class Plodis_DB {
 		$this->conn = $pdo;
 		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$this->driver = strtoupper($this->conn->getAttribute(PDO::ATTR_DRIVER_NAME));
+		$this->optomiseDatabase();
+		$this->selectDatabase(0);
 	}
 	
 	function optomiseDatabase() {
-		foreach(self::$opt_sql as $sql) {
+		if(!isset(self::$optomisations[$this->driver])) return;
+		foreach(self::$optomisations[$this->driver] as $sql) {
 			$this->conn->exec($sql);
 		}
 	}
@@ -212,7 +216,7 @@ class Plodis_DB {
 		foreach(self::$create_sql[$this->driver] as $sql) {
 			$sql = str_replace('<DB>', $this->db_table, $sql);
 			$c = $this->conn->exec($sql);
-			if($this->driver == 'MYSQL' && $c == 0) break;
+			if($this->driver == 'MYSQL' && $c == 0) break; // no CREATE INDEX IF NOT EXISTS
 		}
 		$this->proxy->log("Initialised {$this->db_table}", LOG_INFO);
 		$this->initialised[] = $this->db_table;
@@ -234,7 +238,7 @@ class Plodis_DB {
 	}
 	
 	function selectDatabase($id) {
-		$this->db_table = 'plodis_' . $id;
+		$this->db_table = $this->proxy->options['table_base'] . $id;
 		$this->initTable();
 		$this->proxy->log("Selected database {$id}", LOG_INFO);
 	}

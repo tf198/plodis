@@ -13,9 +13,17 @@ class Plodis_Group {
 		$this->proxy = $proxy;
 	}
 	
+	protected function getSQL($sql) {
+		if(isset($this->sql["{$sql}_{$this->proxy->db->driver}"])) {
+			$sql = $this->sql["{$sql}_{$this->proxy->db->driver}"];
+		} elseif(isset($this->sql[$sql])) {
+			$sql = $this->sql[$sql];
+		}
+		return $sql;
+	}
+	
 	protected function getStmt($sql) {
-		if(isset($this->sql[$sql])) $sql = $this->sql[$sql];
-		return $this->proxy->db->cachedStmt($sql);
+		return $this->proxy->db->cachedStmt($this->getSQL($sql));
 	}
 	
 	protected function fetchOne($which, $params=array(), $column=null) {

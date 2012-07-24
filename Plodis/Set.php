@@ -18,6 +18,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_6_0 {
 		'scard' 	=> 'SELECT COUNT(*) FROM <DB> WHERE pkey=?',
 		'smembers' 	=> 'SELECT field, type FROM <DB> WHERE pkey=? ORDER BY id',
 		'srand'		=> 'SELECT id, field, type FROM <DB> WHERE pkey=? ORDER BY RANDOM() LIMIT 1',
+		'srand_MYSQL' => 'SELECT id, field, type FROM <DB> WHERE pkey=? ORDER BY RAND() LIMIT 1',
 		'srem'		=> 'DELETE FROM <DB> WHERE pkey=? AND field=?',
 		'sismember'	=> 'SELECT 1 FROM <DB> WHERE pkey=? AND field=?',
 	);
@@ -377,7 +378,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_6_0 {
     	for($i=1, $c=count($keys); $i<$c; $i++) {
     		$sql .= " OR pkey=?";
     	}
-    	return $sql . " ORDER BY id";
+    	return $sql;
     }
 
 }

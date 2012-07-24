@@ -141,8 +141,8 @@ class SetTest extends BaseTest {
 		$this->db->sadd('test3', 'a', 'c', 'e');
 		
 		$this->assertSame(array('a', 'b', 'c', 'd'), $this->db->sunion('test1'));
-		$this->assertSame(array('a', 'b', 'd', 'c', 'f', 'z'), $this->db->sunion('test1', 'test2'));
-		$this->assertSame(array('b', 'd', 'f', 'z', 'a', 'c', 'e'), $this->db->sunion('test1', 'test2', 'test3'));
+		$this->assertSameItems(array('a', 'b', 'd', 'c', 'f', 'z'), $this->db->sunion('test1', 'test2'));
+		$this->assertSameItems(array('b', 'd', 'f', 'z', 'a', 'c', 'e'), $this->db->sunion('test1', 'test2', 'test3'));
 		
 		$this->assertThrows('PlodisIncorrectKeyType:', $this->db, 'sunion', 'check_1', 'test2');
 	}
@@ -153,6 +153,6 @@ class SetTest extends BaseTest {
 		$this->db->sadd('test3', 'a', 'c', 'e');
 	
 		$this->assertSame(5, $this->db->sunionstore('test4', 'test1', 'test3'));
-		$this->assertSame(array('b', 'd', 'a', 'c', 'e'), $this->db->smembers('test4'));
+		$this->assertSameItems(array('b', 'd', 'a', 'c', 'e'), $this->db->smembers('test4'));
 	}
 }

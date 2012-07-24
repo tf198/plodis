@@ -8,9 +8,10 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_6_0 {
 		'insert_key' 	=> 'INSERT INTO <DB> (pkey, type, item, expiry) VALUES (?, ?, ?, ?)',
 		'update_key'	=> 'UPDATE <DB> SET item=?, expiry=?, field=NULL WHERE pkey=?',
 		'delete_key'	=> 'DELETE FROM <DB> WHERE pkey=?',
-		'incrby' 		=> 'UPDATE <DB> SET item=item + ? WHERE pkey=?',
+		'incrby' 		=> 'UPDATE <DB> SET item=item + ? WHERE pkey=? AND type=?',
 		'strlen'		=> 'SELECT LENGTH(item), type FROM <DB> WHERE pkey=?',
 		'append'		=> 'UPDATE <DB> SET item=item || ? WHERE pkey=?',
+		'append_MYSQL'	=> 'UPDATE <DB> SET item=CONCAT(item, ?) WHERE pkey=?',
 		'getbytes'		=> 'SELECT SUBSTR(item, ?, ?), type FROM <DB> WHERE pkey=?',
 		'getbytes_end'	=> 'SELECT SUBSTR(item, ?), type FROM <DB> WHERE pkey=?',
 		'setbytes'		=> 'UPDATE <DB> SET item=SUBSTR(item,0,?) || ? || substr(item,?) WHERE pkey=?', // not sure how efficient this is
@@ -92,15 +93,10 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_6_0 {
 		
 		$this->proxy->generic->gc();
 		$this->proxy->db->lock();
-		$c = $this->executeStmt('incrby', array($increment, $key));
-		
-		// check for list/hash
-		if($c > 1) {
-			$this->proxy->db->unlock(true);
-			throw new PlodisIncorrectKeyType;
-		}
+		$c = $this->executeStmt('incrby', array($increment, $key, Plodis::TYPE_STRING));
 		
 		if($c == 0) {
+			$this->proxy->generic->verify($key, 'string', 1);
 			$this->set($key, $increment);
 			$result = (string) $increment;
 		} else {

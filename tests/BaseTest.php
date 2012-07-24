@@ -31,7 +31,7 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 				break;
 			case 'MYSQL':
 				$pdo = new PDO(MYSQL_DSN, MYSQL_USER, MYSQL_PASS);
-				$this->db = new Plodis($pdo, false, false);
+				$this->db = new Plodis($pdo, true, false);
 				$this->db->flushdb();
 				break;
 			default:
@@ -63,12 +63,16 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase {
 			if(is_bool($actual)) $actual = ($actual) ? 1 : 0;
 			// Redis ordering is different - just check the contents
 			if(is_array($actual)) {
-				return;
 				sort($expected);
 				sort($actual);
 			}
-			return parent::assertEquals($expected, $actual, $message);
 		}
+		return parent::assertSame($expected, $actual, $message);
+	}
+	
+	static function assertSameItems($expected, $actual, $message='') {
+		sort($expected);
+		sort($actual);
 		return parent::assertSame($expected, $actual, $message);
 	}
 	

@@ -20,6 +20,7 @@ class Plodis_Generic extends Plodis_Group implements IRedis_Generic_2_6_0 {
 		'type'			=> 'SELECT type FROM <DB> WHERE pkey=? LIMIT 1',
 		'rename'		=> 'UPDATE <DB> SET pkey=? WHERE pkey=?',
 		'random'		=> 'SELECT DISTINCT pkey FROM <DB> ORDER BY RANDOM() LIMIT 1',
+		'random_MYSQL'	=> 'SELECT DISTINCT pkey FROM <DB> ORDER BY RAND() LIMIT 1',
 	);
 	
 	private $alarm = 0;

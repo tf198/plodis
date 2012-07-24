@@ -187,11 +187,11 @@ class ListTest extends BaseTest {
 	}
 	
 	function testBLPop() {
-		$this->markTestSkipped();
+		$this->markTestIncomplete();
 	}
 	
 	function testBRPop() {
-		$this->markTestSkipped();
+		$this->markTestIncomplete();
 	}
 	
 	function testLLen() {
@@ -247,7 +247,7 @@ class ListTest extends BaseTest {
 	}
 	
 	function testLTrim() {
-		if(BACKEND != 'PLODIS') $this->markTestIncomplete(); // Predis returns 1
+		if(BACKEND == 'PREDIS') $this->markTestSkipped(); // Predis returns 1
 		$this->db->rpush('test1', 'a', 'b', 'c', 'd', 'e');
 		$this->assertSame(null, $this->db->ltrim('test1', 0, 3));
 		$this->assertSame(array('a', 'b', 'c'), $this->db->lrange('test1', 0, -1));

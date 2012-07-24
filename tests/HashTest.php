@@ -102,10 +102,10 @@ class HashTest extends BaseTest {
 	function testHIncrByFloat() {
 		$this->db->hmset('test1', array('one' =>  1, 'two' => '2.6', 'three' => 'three'));
 	
-		$this->assertSame(5.7, $this->db->hincrbyfloat('test1', 'one', 4.7));
-		$this->assertSame(8.9, $this->db->hincrbyfloat('test1', 'two', 6.3));
+		$this->assertSame('5.7', $this->db->hincrbyfloat('test1', 'one', 4.7));
+		$this->assertSame('8.9', $this->db->hincrbyfloat('test1', 'two', 6.3));
 		
-		$this->assertSame(3.5, $this->db->hincrbyfloat('test1', 'four', 3.5));
+		$this->assertSame('3.5', $this->db->hincrbyfloat('test1', 'four', 3.5));
 	}
 	
 }

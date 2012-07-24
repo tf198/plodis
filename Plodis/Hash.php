@@ -21,7 +21,8 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_6_0 {
 		'hlen'			=> 'SELECT COUNT(id) FROM <DB> WHERE pkey=?',
 		'hget'			=> 'SELECT id, item, type FROM <DB> WHERE pkey=? AND field=?',
 		'hincrby'		=> 'UPDATE <DB> SET item=item+? WHERE pkey=? AND field=?',
-		'hsetnx'		=> 'INSERT OR IGNORE INTO <DB> (pkey, type, field, item) VALUES (?, ?, ?, ?)', // MySQL INSERT IGNORE
+		'hsetnx'		=> 'INSERT OR IGNORE INTO <DB> (pkey, type, field, item) VALUES (?, ?, ?, ?)',
+		'hsetnx_MYSQL'	=> 'INSERT IGNORE INTO <DB> (pkey, type, field, item) VALUES (?, ?, ?, ?)',
 	);
 	
     /**
@@ -153,9 +154,9 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_6_0 {
     	$c = $this->executeStmt('hincrby', array($increment, $key, $field));
     	if($c==0) {
     		$this->executeStmt('hset', array($key, Plodis::TYPE_HASH, $field, $increment));
-    		$result = (float) $increment;
+    		$result = (string) $increment;
     	} else {
-    		$result = ($this->proxy->options['return_incr_values']) ? (float) $this->hget($key, $field) : null;
+    		$result = ($this->proxy->options['return_incr_values']) ? $this->hget($key, $field) : null;
     	}
     	$this->proxy->db->unlock();
     	return $result;

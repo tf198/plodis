@@ -100,9 +100,8 @@ class Plodis_Proxy {
 		if($klass === null) {
 			$title = ucfirst($name);
 			$klass = "Plodis_{$title}";
-			$file = PLODIS_BASE . "/Plodis/{$title}.php";
-			if(!is_readable($file)) throw new RuntimeException("Unknown module: {$name}");
-			require_once $file;
+			if(!is_readable(PLODIS_BASE . "/Plodis/{$title}.php")) throw new RuntimeException("Unknown module: {$name}");
+			require_once PLODIS_BASE . "/Plodis/{$title}.php";
 		}
 		
 		$this->$name = new $klass($this);
@@ -169,11 +168,14 @@ class Plodis_DB {
 	 * @var multitype:string
 	 */
 	private static $create_sql = array(
-		'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, pkey TEXT, field TEXT, weight NUMERIC, item TEXT, expiry NUMERIC, UNIQUE(pkey, field))',
-		#'CREATE INDEX IF NOT EXISTS <DB>_key ON <DB> (key)',
-		#'CREATE INDEX IF NOT EXISTS <DB>_field ON <DB> (key, field)',
-		'CREATE INDEX IF NOT EXISTS <DB>_weight ON <DB> (pkey, weight)',
-		#'CREATE INDEX IF NOT EXISTS <DB>_expiry ON <DB> (expiry)',
+		'SQLITE' => array(
+			'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER PRIMARY KEY AUTOINCREMENT, type NUMERIC, pkey TEXT, field TEXT, weight NUMERIC, item TEXT, expiry NUMERIC, UNIQUE(pkey, field))',
+			'CREATE INDEX IF NOT EXISTS <DB>_weight ON <DB> (pkey, weight)',
+		),
+		'MYSQL' => array(
+			'CREATE TABLE IF NOT EXISTS <DB> (id INTEGER NOT NULL AUTO_INCREMENT, type SMALLINT NOT NULL, pkey VARCHAR(255) NOT NULL, field VARCHAR(255), weight INTEGER, item BLOB, expiry DOUBLE, PRIMARY KEY(id), UNIQUE(pkey, field))',
+			'CREATE INDEX <DB>_weight ON <DB> (pkey, weight)',
+		),
 	);
 	
 	private $stmt_cache = array();
@@ -184,10 +186,13 @@ class Plodis_DB {
 	
 	private $lock_count = 0;
 	
+	public $driver;
+	
 	function __construct($proxy, $pdo) {
 		$this->proxy = $proxy;
 		$this->conn = $pdo;
 		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$this->driver = strtoupper($this->conn->getAttribute(PDO::ATTR_DRIVER_NAME));
 	}
 	
 	function optomiseDatabase() {
@@ -198,9 +203,10 @@ class Plodis_DB {
 	
 	private function initTable() {
 		if(array_search($this->db_table, $this->initialised) !== false) return;
-		foreach(self::$create_sql as $sql) {
+		foreach(self::$create_sql[$this->driver] as $sql) {
 			$sql = str_replace('<DB>', $this->db_table, $sql);
-			$this->conn->exec($sql);
+			$c = $this->conn->exec($sql);
+			if($this->driver == 'MYSQL' && $c == 0) break;
 		}
 		$this->proxy->log("Initialised {$this->db_table}", LOG_INFO);
 		$this->initialised[] = $this->db_table;
@@ -274,7 +280,7 @@ class Plodis_DB {
 				$this->conn->exec("ROLLBACK TO {$savepoint}");
 			}
 	
-			$this->conn->exec("RELEASE {$savepoint}");
+			$this->conn->exec("RELEASE SAVEPOINT {$savepoint}");
 			//$this->proxy->log("Released {$savepoint}", LOG_WARNING);
 		}
 	}

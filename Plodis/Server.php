@@ -16,6 +16,7 @@ class Plodis_Server extends Plodis_Group implements IRedis_Server_2_6_0 {
 	protected $sql = array(
 		'dbsize'		=> 'SELECT COUNT(DISTINCT pkey) FROM <DB>',
 		'dbs'			=> "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'plodis_%'",
+		'dbs_MYSQL'		=> "SHOW TABLES LIKE 'plodis_%'",
 		'flushdb'		=> "DELETE FROM <DB>",
 		'expires'		=> "SELECT COUNT(DISTINCT pkey) FROM <DB> WHERE expiry IS NOT NULL",
 	);

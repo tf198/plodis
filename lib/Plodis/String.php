@@ -29,17 +29,17 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 		
 		// try for an update - most efficient
 		$this->proxy->db->lock();
-		$count = $this->executeStmt('update_key', array($value, $seconds, $key));
-		if($count==1) {
+		$type = $this->proxy->generic->type($key);
+		
+		if($type == 'string') {
+			$this->executeStmt('update_key', array($value, $seconds, $key));
 			$this->proxy->db->unlock();
 			return;
 		}
-	
-		// if an object or a hash we delete and recreate
-		if($count > 1) {
+		
+		if($type != null) {
 			$this->proxy->generic->del(array($key));
 		}
-	
 		$this->executeStmt('insert_key', array($key, Plodis::TYPE_STRING, $value, $seconds));
 		$this->proxy->db->unlock();
 	}

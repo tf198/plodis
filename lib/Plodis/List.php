@@ -25,7 +25,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 	
 	function limit($sql, $limit=0, $offset=0) {
 		$sql = $this->getSQL($sql);
-		if($offset && !$limit) $limit = ($this->proxy->db->driver == 'SQLITE') ? -1 : 4294967295; // 32bit MySQL hack
+		if($offset && !$limit) $limit = ($this->proxy->db->driver == 'SQLITE') ? -1 : Plodis::POS_INF; // 32bit MySQL hack
 		if($limit) $sql .= " LIMIT {$limit}";
 		if($offset) $sql .= " OFFSET {$offset}";
 		return $sql;

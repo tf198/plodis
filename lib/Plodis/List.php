@@ -23,6 +23,8 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 		'ltrim_r_MYSQL'	=> 'DELETE FROM <DB> WHERE pkey=? ORDER BY weight DESC, id DESC LIMIT <C>',
 	);
 	
+	protected $type = 'list';
+	
 	function limit($sql, $limit=0, $offset=0) {
 		$sql = $this->getSQL($sql);
 		if($offset && !$limit) $limit = ($this->proxy->db->driver == 'SQLITE') ? -1 : Plodis::POS_INF; // 32bit MySQL hack
@@ -34,7 +36,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 	function llen($key, $verified=false) {
 		$this->proxy->generic->gc();
 		// this is called by push ops so cache the verification if possible
-		if(!$verified) $this->proxy->generic->verify($key, 'list');
+		if(!$verified) $this->verify($key);
 		
 		return (int) $this->fetchOne('llen', array($key), 0);
 	}
@@ -70,7 +72,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 			if($row[2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
 			return $row;
 		} else {
-			$this->proxy->generic->verify($key, 'list');
+			$this->verify($key);
 			return null;
 		}
 	}
@@ -79,7 +81,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 		#$this->proxy->log("Starting {$start}, {$end}", LOG_WARNING);
 		$this->proxy->generic->gc();
 		$this->proxy->db->lock();
-		$this->proxy->generic->verify($key, 'list', 1);
+		$this->verify($key, 1);
 		
 		if($start > 0) {
 			$sql = str_replace('<C>', $start, $this->getSQL('ltrim_l'));
@@ -121,7 +123,6 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 	}
 	
 	function lrange($key, $start, $stop) {
-		$this->proxy->generic->gc();
 		$s = 'l_forward';
 		$flip = false;
 		$slice = false;
@@ -140,16 +141,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 	
 		//fprintf(STDERR, "%d %d -> LIMIT %d OFFSET %d\n", $start, $stop, $limit, $offset);
 	
-		$stmt = $this->getStmt($sql);
-		$stmt->execute(array($key));
-	
-		$data = $stmt->fetchAll(PDO::FETCH_NUM);
-	
-		if($data) {
-			if($data[0][2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
-		} else {
-			$this->proxy->generic->verify($key, 'list');
-		}
+		$data = $this->fetchAllGCVerify($key, $sql, array($key), 2, 1);
 		
 		// reverse queries
 		if($flip) {
@@ -161,7 +153,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 			$data = array_slice($data, 0, $stop+1);
 		}
 	
-		return $this->pluck($data, 1);
+		return $data;
 	}
 	
 	function lrem($key, $count, $value) {
@@ -177,28 +169,28 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 		$sql = str_replace('<C>', $count, $this->getSQL($s));
 		$c = $this->executeStmt($sql, array($key, $value, Plodis::TYPE_LIST));
 		if($c == 0) {
-			$this->proxy->generic->verify($key, 'list');
+			$this->verify($key);
 		}
 		return $c;
 	}
 	
 	function rpush($key, $values) {
 		$this->proxy->db->lock();
-		$this->proxy->generic->verify($key, 'list', 1);
+		$this->verify($key, 1);
 		
 		$stmt = $this->getStmt('l_insert');
 		foreach($values as $value) {
 			$stmt->execute(array($key, Plodis::TYPE_LIST, $value, 0));
 		}
 	
-		$result = $this->proxy->options['return_counts'] ? $this->llen($key) : -1;
+		$result = $this->proxy->options['return_counts'] ? $this->llen($key, true) : -1;
 		$this->proxy->db->unlock();
 		return $result;
 	}
 	
 	function lpush($key, $values) {
 		$this->proxy->db->lock();
-		$this->proxy->generic->verify($key, 'list', 1);
+		$this->verify($key, 1);
 		
 		// find the lowest id
 		$row = $this->fetchOne('lpush_index', array($key));
@@ -211,7 +203,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 		}
 		unset($stmt);
 	
-		$result = $this->proxy->options['return_counts'] ? $this->llen($key) : -1;
+		$result = $this->proxy->options['return_counts'] ? $this->llen($key, true) : -1;
 		$this->proxy->db->unlock();
 		return $result;
 	}
@@ -261,7 +253,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 			if($result[2] != Plodis::TYPE_LIST) throw new PlodisIncorrectKeyType;
 			return $result[1];
 		} else {
-			//$this->proxy->generic->verify($key, 'list'); // this causes a SQLITE_SCHEME changed exception for some reason
+			//$this->verify($key); // this causes a SQLITE_SCHEME changed exception for some reason
 			return null;
 		}
 	}
@@ -289,7 +281,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 		$items = $this->fetchAll('l_key_val', array($key, $pivot));
 		if(!$items) {
 			$this->proxy->db->unlock();
-			$this->proxy->generic->verify($key, 'list');
+			$this->verify($key);
 			return -1;
 		}
 		

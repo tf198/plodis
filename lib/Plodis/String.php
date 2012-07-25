@@ -17,6 +17,8 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 		'setbytes'		=> 'UPDATE <DB> SET item=SUBSTR(item,0,?) || ? || substr(item,?) WHERE pkey=?', // not sure how efficient this is
 	);
 	
+	protected $type = 'string';
+	
 	function set($key, $value) {
 		return $this->setex($key, null, $value);
 	}
@@ -27,7 +29,6 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 	
 		if($seconds !== null) $seconds += time();
 		
-		// try for an update - most efficient
 		$this->proxy->db->lock();
 		$type = $this->proxy->generic->type($key);
 		
@@ -52,17 +53,8 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 		$this->proxy->db->unlock();
 	}
 	
-	public function get($key, $gc=true) {
-		if($gc)$this->proxy->generic->gc();
-		$item = $this->fetchOne('select_key', array($key));
-		 
-		if($item) {
-			if($item[1] != Plodis::TYPE_STRING) throw new PlodisIncorrectKeyType;
-			return $item[0];
-		} else {
-			$this->proxy->generic->verify($key, 'string');
-			return null;
-		}
+	public function get($key) {
+		return $this->fetchOneGCVerify($key, 'select_key', array($key), 1, 0, null);
 	}
 	
 	function mget($keys) {
@@ -96,7 +88,7 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 		$c = $this->executeStmt('incrby', array($increment, $key, Plodis::TYPE_STRING));
 		
 		if($c == 0) {
-			$this->proxy->generic->verify($key, 'string', 1);
+			$this->verify($key, 1);
 			$this->set($key, $increment);
 			$result = (string) $increment;
 		} else {
@@ -180,7 +172,7 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 		$result = $this->fetchOne('getbytes', array($offset+1, 1, $key));
 		
 		if(!$result) {
-			$this->proxy->generic->verify($key, 'string');
+			$this->verify($key);
 			return 0;
 		}
 		
@@ -244,7 +236,7 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 			if($row[1] != Plodis::TYPE_STRING) throw new PlodisIncorrectKeyType;
 			$result = $row[0];
 		} else {
-			$this->proxy->generic->verify($key, 'string');
+			$this->verify($key);
 			$result = null;
 		}
 		$this->proxy->db->unlock();
@@ -326,12 +318,6 @@ class Plodis_String extends Plodis_Group implements IRedis_String_2_4_0 {
 	}
 	
 	function strlen($key) {
-		$row = $this->fetchOne('strlen', array($key));
-		if($row) {
-			if($row[1] != Plodis::TYPE_STRING) throw new PlodisIncorrectKeyType;
-			return (int) $row[0];
-		} else {
-			return 0;
-		}
+		return (int) $this->fetchOneGCVerify($key, 'strlen', array($key), 1, 0, 0);
 	}
 }

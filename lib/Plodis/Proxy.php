@@ -215,6 +215,7 @@ class Plodis_DB {
 	}
 	
 	private function initTable() {
+		if(!isset(self::$create_sql[$this->driver])) throw new Exception("No implementation for {$this->driver}");
 		if(array_search($this->db_table, $this->initialised) !== false) return;
 		foreach(self::$create_sql[$this->driver] as $sql) {
 			$sql = str_replace('<DB>', $this->db_table, $sql);

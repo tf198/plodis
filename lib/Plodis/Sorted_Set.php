@@ -19,6 +19,8 @@ class Plodis_Sorted_Set extends Plodis_Group implements IRedis_Sorted_set_2_4_0 
 		'zincrby'	=> 'UPDATE <DB> SET weight=weight+? WHERE pkey=? AND field=? AND type=?',
 	);
 	
+	protected $type = 'zset';
+	
     /**
      * Add one or more members to a sorted set, or update its score if it already exists
      *
@@ -49,7 +51,7 @@ class Plodis_Sorted_Set extends Plodis_Group implements IRedis_Sorted_set_2_4_0 
     		}
     	}
     	$this->proxy->db->lock();
-    	$this->proxy->generic->verify($key, 'zset', 1);
+    	$this->verify($key, 1);
     	$c = 0;
     	foreach($pairs as $member=>$score) {
     		try {
@@ -74,7 +76,7 @@ class Plodis_Sorted_Set extends Plodis_Group implements IRedis_Sorted_set_2_4_0 
      *
      */
     public function zcard($key) {
-    	return $this->countItems('zcard', array($key, Plodis::TYPE_ZSET), $key);
+    	return $this->countItems($key, 'zcard', array($key, Plodis::TYPE_ZSET));
     }
 
     /**
@@ -96,7 +98,7 @@ class Plodis_Sorted_Set extends Plodis_Group implements IRedis_Sorted_set_2_4_0 
     	if($min == '-inf') $min = Plodis::NEG_INF;
     	if($max == 'inf') $max = Plodis::POS_INF;
     	
-    	return $this->countItems('zcount', array($key, Plodis::TYPE_ZSET, $min, $max), $key);
+    	return $this->countItems($key, 'zcount', array($key, Plodis::TYPE_ZSET, $min, $max));
     }
 
     /**
@@ -118,7 +120,7 @@ class Plodis_Sorted_Set extends Plodis_Group implements IRedis_Sorted_set_2_4_0 
     	$this->proxy->db->lock();
     	$c = $this->executeStmt('zincrby', array($increment, $key, $member, Plodis::TYPE_ZSET));
     	if($c == 0) {
-    		$this->proxy->generic->verify($key, 'zset', 1);
+    		$this->verify($key, 1);
     		$this->executeStmt('zadd', array($key, Plodis::TYPE_ZSET, $increment, $member));
     		$result = $increment;
     	} else {

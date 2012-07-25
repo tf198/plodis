@@ -25,6 +25,8 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
 		'hsetnx_MYSQL'	=> 'INSERT IGNORE INTO <DB> (pkey, type, field, item) VALUES (?, ?, ?, ?)',
 	);
 	
+	protected $type = 'hash';
+	
     /**
      * Delete one or more hash fields
      *
@@ -39,7 +41,7 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
      */
     public function hdel($key, $fields) {
     	$this->proxy->generic->gc();
-    	$this->proxy->generic->verify($key, 'hash');
+    	$this->verify($key);
     	$c = 0;
     	foreach($fields as $field) {
     		$c += $this->executeStmt('h_delete', array($key, $field));
@@ -60,15 +62,7 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
      * @return null no documentation available
      */
     public function hexists($key, $field) {
-    	$this->proxy->generic->gc();
-    	$row = $this->fetchOne('hget', array($key, $field));
-    	if($row) {
-    		if($row[2] != Plodis::TYPE_HASH) throw new PlodisIncorrectKeyType;
-    		return 1;
-    	} else {
-    		$this->proxy->generic->verify($key, 'hash');
-    		return 0;
-    	}
+    	return ($this->fetchOneGCVerify($key, 'hget', array($key, $field), 2)) ? 1 : 0;
     }
 
     /**
@@ -84,16 +78,7 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
      * @return null no documentation available
      */
     public function hget($key, $field) {
-    	$this->proxy->generic->gc();
-    	$item = $this->fetchOne('hget', array($key, $field));
-    	
-    	if($item) {
-    		if($item[2] != Plodis::TYPE_HASH) throw new PlodisIncorrectKeyType;
-    		return $item[1];
-    	} else {
-    		$this->proxy->generic->verify($key, 'hash');
-    		return null;
-    	}
+    	return $this->fetchOneGCVerify($key, 'hget', array($key, $field), 2, 1, null);
     }
 
     /**
@@ -108,10 +93,9 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
      * @return null no documentation available
      */
     public function hgetall($key) {
-    	$this->proxy->generic->gc();
-    	$all = $this->fetchAll('h_select', array($key));
+    	$data = $this->fetchAllGCVerify($key, 'h_select', array($key), 2);
     	$result = array();
-    	foreach($all as $row) $result[$row[0]] = $row[1];
+    	foreach($data as $row) $result[$row[0]] = $row[1];
     	return $result;
     }
 
@@ -174,8 +158,7 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
      * @return null no documentation available
      */
     public function hkeys($key) {
-    	$this->proxy->generic->gc();
-    	return $this->fetchAll('h_select', array($key), 0);
+    	return $this->fetchAllGCVerify($key, 'h_select', array($key), 2, 0);
     }
 
     /**
@@ -190,7 +173,7 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
      * @return null no documentation available
      */
     public function hlen($key) {
-    	return $this->countItems('hlen', array($key, Plodis::TYPE_HASH), $key);
+    	return $this->countItems($key, 'hlen', array($key, Plodis::TYPE_HASH));
     }
 
     /**
@@ -290,8 +273,7 @@ class Plodis_Hash extends Plodis_Group implements IRedis_Hash_2_4_0 {
      * @return null no documentation available
      */
     public function hvals($key) {
-    	$this->proxy->generic->gc();
-    	return $this->fetchAll('h_select', array($key), 1);
+    	return $this->fetchAllGCVerify($key, 'h_select', array($key), 2, 1);
     }
 
 }

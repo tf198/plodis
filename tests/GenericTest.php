@@ -140,6 +140,7 @@ class GenericTest extends BaseTest {
 	}
 	
 	function testAlarm() {
+		if(!$this->db instanceof Plodis) $this->markTestSkipped();
 		$this->db->set('test1', 1);
  		$this->db->generic->pexpire('test1', 20);
 		

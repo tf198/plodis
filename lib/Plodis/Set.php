@@ -20,8 +20,10 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
 		'srand'		=> 'SELECT id, field, type FROM <DB> WHERE pkey=? ORDER BY RANDOM() LIMIT 1',
 		'srand_MYSQL' => 'SELECT id, field, type FROM <DB> WHERE pkey=? ORDER BY RAND() LIMIT 1',
 		'srem'		=> 'DELETE FROM <DB> WHERE pkey=? AND field=?',
-		'sismember'	=> 'SELECT 1 FROM <DB> WHERE pkey=? AND field=?',
+		'sismember'	=> 'SELECT type FROM <DB> WHERE pkey=? AND field=?',
 	);
+	
+	protected $type = 'set';
 	
     /**
      * Add one or more members to a set
@@ -39,7 +41,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
      */
     public function sadd($key, $members) {
     	$this->proxy->db->lock();
-    	$this->proxy->generic->verify($key, 'set', 1);
+    	$this->verify($key, 1);
     	
     	$stmt = $this->getStmt('sadd');
     	$c = 0;
@@ -66,15 +68,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
      *
      */
     public function scard($key) {
-    	return $this->countItems('scard', array($key, Plodis::TYPE_SET), $key);
-    	/*
-    	$this->proxy->generic->gc();
-    	$this->proxy->db->lock();
-    	$this->proxy->generic->verify($key, 'set', 1);
-    	$data = $this->fetchOne('scard', array($key));
-    	$this->proxy->db->unlock();
-    	return (int) $data[0];
-    	*/
+    	return $this->countItems($key, 'scard', array($key, Plodis::TYPE_SET));
     }
 
     private function scustom($sql, $keys) {
@@ -90,7 +84,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
     		foreach($data as &$row) $row = $row[0];
     		return $data;
     	} else {
-    		$this->proxy->generic->verify($keys[0], 'set');
+    		foreach($keys as $key) $this->verify($key);
     		return array();
     	}
     }
@@ -209,11 +203,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
      *
      */
     public function sismember($key, $member) {
-    	$this->proxy->generic->gc();
-    	$row = $this->fetchOne('sismember', array($key, $member));
-    	if($row) return 1;
-    	$this->proxy->generic->verify($key, 'set');
-    	return 0;
+    	return ($this->fetchOneGCVerify($key, 'sismember', array($key, $member), 0)) ? 1 : 0;
     }
 
     /**
@@ -229,11 +219,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
      *
      */
     public function smembers($key) {
-    	$this->proxy->generic->gc();
-    	$all = $this->fetchAll('smembers', array($key));
-    	if($all && $all[0][1] != Plodis::TYPE_SET) throw new PlodisIncorrectKeyType;
-    	foreach($all as &$row) $row = $row[0];
-    	return $all;
+    	return $this->fetchAllGCVerify($key, 'smembers', array($key), 1, 0);
     }
 
     /**
@@ -255,7 +241,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
      */
     public function smove($source, $destination, $member) {
     	$this->proxy->db->lock();
-    	$this->proxy->generic->verify($source, 'set', 1);
+    	$this->verify($source, 1);
     	$c = $this->executeStmt('srem', array($source, $member));
     	if($c == 1) {
     		$this->sadd($destination, array($member));
@@ -285,7 +271,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
     		$this->executeStmt('srem', array($data[1]));
     		$result = $data[1];
     	} else {
-    		$this->proxy->generic->verify($key, 'set', 1);
+    		$this->verify($key, 1);
     		$result = null;
     	}
     	$this->proxy->db->unlock();
@@ -308,7 +294,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
     	$this->proxy->generic->gc();
     	$data = $this->fetchOne('srand', array($key));
     	if(!$data) {
-    		$this->proxy->generic->verify($key, 'set');
+    		$this->verify($key);
     		return null;
     	}
     	
@@ -333,7 +319,7 @@ class Plodis_Set extends Plodis_Group implements IRedis_Set_2_4_0 {
     public function srem($key, $members) {
     	$this->proxy->generic->gc();
     	$this->proxy->db->lock();
-    	$this->proxy->generic->verify($key, 'set', 1);
+    	$this->verify($key, 1);
     	$c = 0;
     	foreach($members as $member) {
     		$c += $this->executeStmt('srem', array($key, $member));

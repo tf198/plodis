@@ -229,6 +229,7 @@ class Plodis_List extends Plodis_Group implements IRedis_List_2_4_0 {
 			$this->proxy->db->lock();
 			$pop->execute(array($key));
 			$result = $pop->fetch(PDO::FETCH_NUM);
+			$pop->closeCursor();
 			if($result) {
 				try {
 					$del->execute(array($result[0]));

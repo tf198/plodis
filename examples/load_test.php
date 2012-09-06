@@ -19,13 +19,14 @@ for($i=0; $i<$consumers; $i++) {
 	$processes[] = proc_open("php {$path}/consumer.php", array(), $pipes);
 }
 
-echo "Started all processes\n";
+echo "Waiting for jobs to start...\n";
+sleep(1);
 
 $stats = array();
 
 echo "Waiting for jobs to finish\n";
 while(true) {
-	$data = $plodis->brpop('job-out', 2);
+	$data = $plodis->brpop('job-out', 3);
 	if($data == null) break;
 	$result = json_decode($data, true);
 	if(!isset($stats[$result['worker']])) $stats[$result['worker']] = 0;
@@ -33,6 +34,10 @@ while(true) {
 }
 
 echo "\n\nStats:\n";
+$total = 0;
 foreach($stats as $worker=>$count) {
 	echo "Worker {$worker}: {$count}\n";
+	$total += $count;
 }
+
+echo "Total jobs: {$total}\n";

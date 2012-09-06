@@ -269,7 +269,6 @@ class Plodis_DB {
 	
 	public function lock() {
 		if($this->lock_count == 0) {
-			//$this->conn->beginTransaction();
 			$this->conn->exec("BEGIN IMMEDIATE TRANSACTION");
 			//$this->proxy->log("Started transaction", LOG_WARNING);
 		} else {
@@ -286,11 +285,9 @@ class Plodis_DB {
 		if($this->lock_count == 0) {
 			if($rollback) {
 				$this->proxy->log("Rolling back transaction", LOG_INFO);
-				//$this->conn->rollBack();
 				$this->conn->exec("ROLLBACK");
 			} else {
 				//$this->proxy->log("Commiting transaction", LOG_WARNING);
-				//$this->conn->commit();
 				$this->conn->exec("COMMIT");
 			}
 		} else {
